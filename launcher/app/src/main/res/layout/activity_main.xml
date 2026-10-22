@@ -30,6 +30,32 @@
         android:layout_height="match_parent"
         android:alpha="0" />
 
+    <!-- Full-screen dynamic wallpapers for focused dock apps (cross-fading) -->
+    <ImageView
+        android:id="@+id/dockWallpaperA"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0"
+        android:importantForAccessibility="no" />
+
+    <ImageView
+        android:id="@+id/dockWallpaperB"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:alpha="0"
+        android:importantForAccessibility="no" />
+
+    <!-- Apple TV-style gradient scrim over wallpaper for legibility -->
+    <View
+        android:id="@+id/wallpaperScrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/wallpaper_scrim"
+        android:alpha="0"
+        android:importantForAccessibility="no" />
+
     <!-- Race-weekend panel (a theme's race_calendar, see RaceWeekend): in the free space under the clock,
          shown only from shortly before a weekend's first session until the race is over. Updated once a
          minute with the clock, never animated. -->
@@ -65,7 +91,7 @@
                 android:singleLine="true"
                 android:textColor="#B3FFFFFF"
                 android:textSize="12sp"
-                android:fontFamily="@font/outfit_medium"
+                android:fontFamily="@font/inter_medium"
                 android:letterSpacing="0.22"
                 android:textAllCaps="true" />
         </LinearLayout>
@@ -78,7 +104,7 @@
             android:singleLine="true"
             android:textColor="#FFFFFFFF"
             android:textSize="34sp"
-            android:fontFamily="@font/outfit_light"
+            android:fontFamily="@font/inter_light"
             android:letterSpacing="-0.01"
             android:includeFontPadding="false" />
 
@@ -90,7 +116,7 @@
             android:singleLine="true"
             android:textColor="#99FFFFFF"
             android:textSize="12sp"
-            android:fontFamily="@font/outfit_medium"
+            android:fontFamily="@font/inter_medium"
             android:letterSpacing="0.12" />
     </LinearLayout>
 
@@ -103,49 +129,6 @@
         android:visibility="gone"
         android:importantForAccessibility="no" />
 
-    <!-- Top shelf: the focused dock app's name, positioned above the dock in code. -->
-    <LinearLayout
-        android:id="@+id/hero"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="68dp"
-        android:orientation="vertical"
-        android:alpha="0">
-
-        <TextView
-            android:id="@+id/heroName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#FFFFFFFF"
-            android:textSize="48sp"
-            android:fontFamily="@font/outfit_light"
-            android:letterSpacing="-0.02"
-            android:includeFontPadding="false"
-            android:singleLine="true" />
-
-        <!-- Cinematic shelf only: when the app was last opened, and the dock position dots. -->
-        <TextView
-            android:id="@+id/heroMeta"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginTop="12dp"
-            android:singleLine="true"
-            android:textColor="#B3FFFFFF"
-            android:textSize="15sp"
-            android:fontFamily="@font/outfit_light"
-            android:visibility="gone" />
-
-        <LinearLayout
-            android:id="@+id/heroDots"
-            android:layout_width="wrap_content"
-            android:layout_height="6dp"
-            android:layout_marginStart="4dp"
-            android:layout_marginTop="16dp"
-            android:orientation="horizontal"
-            android:visibility="gone" />
-    </LinearLayout>
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -156,175 +139,119 @@
         android:clipChildren="false"
         android:clipToPadding="false">
 
-        <!-- No clipping down to the pills: with advanced effects a focused pill scales up past its row. -->
+        <!-- First layer: PS5-style top bar with icon-only buttons beside clock & date -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clipChildren="false"
             android:clipToPadding="false">
 
-            <LinearLayout
-                android:id="@+id/leftBlock"
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/greeting"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@+id/topButtons"
-                android:layout_marginEnd="16dp"
-                android:orientation="vertical">
+                android:visibility="gone" />
 
-                <!-- The header texts use gravity left, not start: the launcher lays out left to right
-                     (no supportsRtl), and with start a right-to-left script such as Arabic would move to the
-                     right edge of these full-width lines instead of staying under the clock. -->
-                <TextView
-                    android:id="@+id/greeting"
-                    android:gravity="left"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:singleLine="true"
-                    android:ellipsize="end"
-                    android:layout_marginStart="4dp"
-                    android:textColor="#8CFFFFFF"
-                    android:textSize="12sp"
-                    android:fontFamily="@font/outfit_medium"
-                    android:letterSpacing="0.22"
-                    android:textAllCaps="true" />
+            <TextView
+                android:id="@+id/shamsiDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:baselineAligned="true">
-
-                    <TextClock
-                        android:id="@+id/clock"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:format12Hour="h:mm"
-                        android:format24Hour="HH:mm"
-                        android:textColor="#FFFFFFFF"
-                        android:textSize="52sp"
-                        android:fontFamily="@font/outfit_light"
-                        android:letterSpacing="-0.04"
-                        android:includeFontPadding="false" />
-
-                    <TextClock
-                        android:id="@+id/ampm"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:layout_gravity="bottom"
-                        android:layout_marginBottom="8dp"
-                        android:format12Hour="a"
-                        android:format24Hour=""
-                        android:textColor="#B3FFFFFF"
-                        android:textSize="15sp"
-                        android:fontFamily="@font/outfit_medium"
-                        android:letterSpacing="0.08"
-                        android:textAllCaps="true" />
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="26dp"
-                        android:layout_gravity="bottom"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginEnd="16dp"
-                        android:layout_marginBottom="8dp"
-                        android:background="#33FFFFFF" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="bottom"
-                        android:layout_marginBottom="9dp"
-                        android:orientation="vertical">
-
-                        <!-- Shamsi date ("27 Mehr 1405"), shown when shamsi_date is on. -->
-                        <TextView
-                            android:id="@+id/shamsiDate"
-                            android:gravity="left"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:singleLine="true"
-                            android:ellipsize="end"
-                            android:textColor="#E6FFFFFF"
-                            android:textSize="17sp"
-                            android:fontFamily="@font/outfit_regular"
-                            android:letterSpacing="0.02"
-                            android:includeFontPadding="false"
-                            android:visibility="gone" />
-
-                        <TextClock
-                            android:id="@+id/date"
-                            android:gravity="left"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:singleLine="@bool/date_single_line"
-                            android:maxLines="2"
-                            android:lineSpacingExtra="6dp"
-                            android:ellipsize="end"
-                            android:format12Hour="@string/date_format_home"
-                            android:format24Hour="@string/date_format_home"
-                            android:textColor="#A6FFFFFF"
-                            android:textSize="14sp"
-                            android:fontFamily="@font/outfit_regular"
-                            android:letterSpacing="0.14"
-                            android:textAllCaps="true" />
-                    </LinearLayout>
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <!-- Shown only when show_stats is on. Outside leftBlock, so the top buttons stay level with the clock
-                 row; gone, it takes no space. -->
             <TextView
                 android:id="@+id/stats"
                 android:layout_width="wrap_content"
-                android:layout_below="@id/leftBlock"
-                android:layout_alignStart="@id/leftBlock"
-                android:gravity="left"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:textColor="#D9FFFFFF"
-                android:textSize="14sp"
-                android:fontFamily="@font/outfit_medium"
-                android:letterSpacing="0.04"
-                android:focusable="false"
                 android:visibility="gone" />
 
+            <View
+                android:id="@+id/leftBlock"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone" />
+
+            <!-- First layer left side: horizontal tab Home and App (hidden) -->
+            <LinearLayout
+                android:id="@+id/topTabs"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:gravity="center_vertical"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tabHome"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:gravity="center"
+                    android:text="Home"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/inter_medium"
+                    android:letterSpacing="0.02"
+                    android:textColor="@drawable/tab_item_text"
+                    android:focusable="false"
+                    android:clickable="false"
+                    android:paddingStart="18dp"
+                    android:paddingEnd="18dp"
+                    android:background="@drawable/tab_item_bg"
+                    android:nextFocusRight="@+id/tabApp"
+                    android:nextFocusDown="@+id/grid" />
+
+                <TextView
+                    android:id="@+id/tabApp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:gravity="center"
+                    android:layout_marginStart="8dp"
+                    android:text="App"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/inter_medium"
+                    android:letterSpacing="0.02"
+                    android:textColor="@drawable/tab_item_text"
+                    android:focusable="false"
+                    android:clickable="false"
+                    android:paddingStart="18dp"
+                    android:paddingEnd="18dp"
+                    android:background="@drawable/tab_item_bg"
+                    android:nextFocusLeft="@+id/tabHome"
+                    android:nextFocusRight="@+id/btnInputs"
+                    android:nextFocusDown="@+id/appsGrid" />
+            </LinearLayout>
+
+            <!-- First layer container (only logos for Inputs, Wifi, Settings beside Clock & Date) -->
             <LinearLayout
                 android:id="@+id/topButtons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:layout_alignBottom="@id/leftBlock"
-                android:layout_marginBottom="6dp"
+                android:layout_centerVertical="true"
+                android:gravity="center_vertical"
                 android:clipChildren="false"
                 android:clipToPadding="false"
                 android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/btnInputs"
-                    style="@style/TopButton"
-                    android:text="@string/inputs"
+                    style="@style/TopButtonIcon"
+                    android:contentDescription="@string/inputs"
                     android:drawableStart="@drawable/ic_input"
                     android:nextFocusDown="@+id/grid" />
 
                 <TextView
                     android:id="@+id/btnWifi"
-                    style="@style/TopButton"
-                    android:maxWidth="180dp"
-                    android:singleLine="true"
-                    android:ellipsize="end"
-                    android:text="@string/wifi"
+                    style="@style/TopButtonIcon"
+                    android:contentDescription="@string/wifi"
                     android:drawableStart="@drawable/ic_wifi"
                     android:nextFocusDown="@+id/grid" />
 
                 <TextView
                     android:id="@+id/btnReorder"
                     style="@style/TopButtonIcon"
+                    android:visibility="gone"
                     android:contentDescription="@string/reorder"
                     android:drawableStart="@drawable/ic_swap_vert"
                     android:nextFocusDown="@+id/grid" />
@@ -339,24 +266,62 @@
 
                 <TextView
                     android:id="@+id/btnSettings"
-                    style="@style/TopButton"
-                    android:text="@string/settings"
+                    style="@style/TopButtonIcon"
+                    android:contentDescription="@string/settings"
                     android:drawableStart="@drawable/ic_settings"
                     android:nextFocusDown="@+id/grid" />
+
+                <!-- Beside that: small sleek clock and date -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:orientation="vertical"
+                    android:gravity="end">
+
+                    <TextClock
+                        android:id="@+id/clock"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:format12Hour="h:mm a"
+                        android:format24Hour="HH:mm"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="18sp"
+                        android:fontFamily="@font/inter_medium"
+                        android:letterSpacing="0.02"
+                        android:includeFontPadding="false" />
+
+                    <TextClock
+                        android:id="@+id/date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:format12Hour="@string/date_format_home"
+                        android:format24Hour="@string/date_format_home"
+                        android:textColor="#99FFFFFF"
+                        android:textSize="11sp"
+                        android:fontFamily="@font/inter_regular"
+                        android:letterSpacing="0.10"
+                        android:textAllCaps="true" />
+                </LinearLayout>
             </LinearLayout>
         </RelativeLayout>
 
         <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells. -->
         <FrameLayout
+            android:id="@+id/contentFrame"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginTop="10dp">
+            android:layout_marginTop="10dp"
+            android:clipChildren="false"
+            android:clipToPadding="false">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/grid"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
+                android:layout_gravity="start|top"
                 android:paddingTop="10dp"
                 android:paddingBottom="40dp"
                 android:clipToPadding="false"
@@ -364,7 +329,143 @@
                 android:overScrollMode="never"
                 android:scrollbars="none"
                 android:descendantFocusability="afterDescendants" />
+
+            <!-- App page: 5-column grid for ALL apps -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/appsGrid"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="20dp"
+                android:paddingBottom="48dp"
+                android:clipToPadding="false"
+                android:clipChildren="false"
+                android:overScrollMode="never"
+                android:scrollbars="none"
+                android:visibility="gone"
+                android:descendantFocusability="afterDescendants" />
         </FrameLayout>
+    </LinearLayout>
+
+    <!-- Title app on the bottom left with larger font size, status dots on top -->
+    <LinearLayout
+        android:id="@+id/hero"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="56dp"
+        android:layout_marginBottom="68dp"
+        android:orientation="vertical"
+        android:alpha="0">
+
+        <!-- Status dots on top the title app -->
+        <LinearLayout
+            android:id="@+id/heroDots"
+            android:layout_width="wrap_content"
+            android:layout_height="6dp"
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal" />
+
+        <!-- Title app with larger font size -->
+        <TextView
+            android:id="@+id/heroName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFFFF"
+            android:textSize="54sp"
+            android:fontFamily="@font/inter_light"
+            android:letterSpacing="-0.02"
+            android:includeFontPadding="false"
+            android:singleLine="true" />
+
+        <TextView
+            android:id="@+id/heroMeta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- App statistics on the bottom right (weekly screen time & storage) -->
+    <LinearLayout
+        android:id="@+id/appStats"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="56dp"
+        android:layout_marginBottom="72dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:background="@drawable/app_stats_bg"
+        android:alpha="0">
+
+        <!-- Stat 1: Weekly Screen Time -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="start">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Weekly Screen Time"
+                android:textColor="#88FFFFFF"
+                android:textSize="10sp"
+                android:fontFamily="@font/inter_medium"
+                android:letterSpacing="0.04" />
+
+            <TextView
+                android:id="@+id/statWeeklyTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="#FFFFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="@font/inter_semibold"
+                android:letterSpacing="0.01"
+                android:text="0 hr" />
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:background="#22FFFFFF" />
+
+        <!-- Stat 2: Storage Usage -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="start">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Storage Usage"
+                android:textColor="#88FFFFFF"
+                android:textSize="10sp"
+                android:fontFamily="@font/inter_medium"
+                android:letterSpacing="0.04" />
+
+            <TextView
+                android:id="@+id/statStorage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="#FFFFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="@font/inter_semibold"
+                android:letterSpacing="0.01"
+                android:text="0 MB" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- The single floating glass highlight that springs between tiles. -->

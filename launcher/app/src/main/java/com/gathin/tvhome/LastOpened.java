@@ -28,6 +28,25 @@ final class LastOpened {
     }
 
     /**
+     * Returns up to {@code max} package names sorted by most recently opened first.
+     */
+    static java.util.List<String> recent(Context ctx, int max) {
+        java.util.Map<String, ?> all = prefs(ctx).getAll();
+        java.util.List<java.util.Map.Entry<String, Long>> list = new java.util.ArrayList<>();
+        for (java.util.Map.Entry<String, ?> entry : all.entrySet()) {
+            if (entry.getValue() instanceof Long) {
+                list.add(new java.util.AbstractMap.SimpleEntry<>(entry.getKey(), (Long) entry.getValue()));
+            }
+        }
+        list.sort((a, b) -> Long.compare(b.getValue(), a.getValue()));
+        java.util.List<String> result = new java.util.ArrayList<>();
+        for (int i = 0; i < Math.min(max, list.size()); i++) {
+            result.add(list.get(i).getKey());
+        }
+        return result;
+    }
+
+    /**
      * "5 minutes ago" within the hour, then the day and the time: "today, 11:40 am", "yesterday, 9:40 pm",
      * "3 days ago, 9:40 pm", "Oct 12, 9:40 pm". The parts are Android's own wording in the TV's language.
      */

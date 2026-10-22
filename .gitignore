@@ -1,4 +1,7 @@
 tools/venv/
+.venv/
+.screensaver_cache/
+screensaver/
 tools/adbkey/
 __pycache__/
 launcher/.gradle/

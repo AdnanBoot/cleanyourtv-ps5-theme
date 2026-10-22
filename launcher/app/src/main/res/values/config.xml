@@ -8,25 +8,29 @@
 <resources>
 
     <!-- Apps pinned to the dock row at the bottom, in this order. Missing apps are skipped. -->
+    <!-- Youtube > Apple TV > Netflix > HBO Max > Prime Video > Disney + > Vidio -->
     <string-array name="dock_apps">
-        <item>com.netflix.ninja</item>
-        <item>com.amazon.amazonvideo.livingroom</item>
         <item>com.google.android.youtube.tv</item>
-        <item>in.startv.hotstar</item>
+        <item>com.apple.atve.androidtv.appletv</item>
+        <item>com.netflix.ninja</item>
+        <item>com.wbd.stream</item>
+        <item>com.amazon.amazonvideo.livingroom</item>
+        <item>com.disney.disneyplus</item>
+        <item>com.vidio.android.tv</item>
     </string-array>
     <!-- With fewer dock_apps than columns (or a dock app that is not installed), the free dock slots take
          the first grid apps, so the dock never shows a gap. false leaves them empty (#162); a theme can
          set "fill_dock": false. -->
-    <bool name="fill_dock">true</bool>
+    <bool name="fill_dock">false</bool>
 
     <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs menu already covers). -->
     <string-array name="hidden_apps">
-        <item>com.mediatek.wwtv.tvcenter</item>
-        <item>com.mitv.gallery</item>
+        <item>com.tcl.tv</item>
     </string-array>
 
     <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
-    <string name="live_tv_package" translatable="false">com.mediatek.wwtv.tvcenter</string>
+    <!-- TCL RT2851: com.tcl.tv is the tuner/Live TV app. -->
+    <string name="live_tv_package" translatable="false">com.tcl.tv</string>
 
     <!-- Some TVs give their Live TV app no leanback entry point at all, so `live_tv_package` above
          resolves to nothing (TCL Android TV 9 on China-market sets is one). This action is then sent
@@ -41,6 +45,10 @@
 
     <!-- A tile's name instead of the app's own: "package=Name". It also shows above the dock. -->
     <string-array name="app_labels">
+        <item>com.apple.atve.androidtv.appletv=Apple TV</item>
+        <item>com.netflix.ninja=Netflix</item>
+        <item>com.wbd.stream=HBO Max</item>
+        <item>com.amazon.amazonvideo.livingroom=Prime Video</item>
     </string-array>
     <!-- A tile's artwork instead of the app's banner: "package=drawable", a banner_* drawable bundled with the
          launcher (res/drawable). banner_tv is a magenta field with the Live TV glyph. -->
@@ -52,8 +60,9 @@
          offers one row that starts this service: component first, then action. The component can also be an
          activity, for sets whose panel is a dialog (BYINTEK U4). With no Live TV app either, the Inputs pill
          opens the panel directly instead of a menu. Leave empty to omit. -->
-    <string name="source_panel_service" translatable="false"></string>
-    <string name="source_panel_action" translatable="false"></string>
+    <!-- TCL RT2851: TCL's own source menu service (per examples/tcl-beyondtv-rt2851/debloat.txt). -->
+    <string name="source_panel_service" translatable="false">com.tcl.sourcemananger/com.tcl.insrc.ShowWindowService</string>
+    <string name="source_panel_action" translatable="false">com.tcl.insrc.SHOW_WINDOW</string>
 
     <!-- Inputs menu: HDMI and AV rows normally open with ACTION_VIEW on the input's channel URI, which the
          Live TV app handles. Where nothing answers that, this action is sent with the same URI instead
@@ -143,7 +152,7 @@
 
     <!-- Tiles per row in the grid; the dock always has this many slots. Tiles are 180dp wide at 4 columns and
          shrink to fit from 5 up (about 144dp at 5, 117dp at 6 on a 1080p TV). -->
-    <integer name="columns">4</integer>
+    <integer name="columns">7</integer>
 
     <!-- Basic motion is on; advanced effects are opt-in in the launcher's own Settings screen. -->
     <bool name="animations">true</bool>
@@ -185,7 +194,8 @@
          colour; the shelf gets a larger name, a "Last opened" line (from the apps Home opened) and dock position
          dots, the focus glow takes the app's colour and the dock band turns translucent. false keeps the plain
          shelf. Can also be set with "cinematic_home": true in a theme's config.json. -->
-    <bool name="cinematic_home">false</bool>
+    <!-- TCL RT2851: enable for Apple TV-style ambient art behind the hero name. -->
+    <bool name="cinematic_home">true</bool>
 
     <!-- The glow behind the dock in the focused app's colour (red for YouTube, blue for Prime Video). false keeps
          only background_color or the wallpaper behind everything. Can also be set with "ambient_glow": false in a
@@ -195,5 +205,5 @@
          Unlike the system screensaver this never starts over live TV or an app, which matters on TVs whose
          Live TV window does not keep the screen on (CVTE): there the system screensaver would start in the
          middle of a programme. Can also be set with "home_idle_clock_minutes": 10 in a theme's config.json. -->
-    <integer name="home_idle_clock_minutes">0</integer>
+    <integer name="home_idle_clock_minutes">3</integer>
 </resources>

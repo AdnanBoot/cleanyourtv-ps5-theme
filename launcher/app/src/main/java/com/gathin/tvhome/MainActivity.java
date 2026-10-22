@@ -4,6 +4,10 @@ import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.Dialog;
+import android.app.usage.StorageStats;
+import android.app.usage.StorageStatsManager;
+import android.app.usage.UsageStats;
+import android.app.usage.UsageStatsManager;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -40,7 +44,9 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.Process;
 import android.os.SystemClock;
+import android.os.storage.StorageManager;
 import android.provider.Settings;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -70,6 +76,7 @@ import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
@@ -84,6 +91,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * tvOS style home: black, a pinned dock row, an app grid, and one glass highlight that springs between tiles.
@@ -143,6 +152,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean advancedEffects;
     private TextView greeting;
     private View clockBlock;
+    private TextView tabHome;
+    private TextView tabApp;
+    private RecyclerView appsGrid;
+    private AllAppsAdapter allAppsAdapter;
+    private boolean isAppsTab = false;
     private View btnInputs;
     private TextView btnWifi;
     /** The network pill's icon as last set, so a refresh that changes nothing does not lay the top bar out again. */
@@ -162,6 +176,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** Optional time-of-day backdrop (config.xml, sky_intensity); 0 keeps it hidden. */
     private SkyView sky;
     private String vpnApp;
+
+    // ── App statistics on bottom right ────────────────────────────────────────
+    private static class AppStats {
+        final String totalTime;
+        final String weeklyTime;
+        final String storage;
+
+        AppStats(String totalTime, String weeklyTime, String storage) {
+            this.totalTime = totalTime;
+            this.weeklyTime = weeklyTime;
+            this.storage = storage;
+        }
+    }
+
+    private View appStats;
+    private TextView statWeeklyTime;
+    private TextView statStorage;
+    private String currentStatsPkg = "";
+    private final Map<String, AppStats> appStatsCache = new HashMap<>();
+    private final ExecutorService statsExecutor = Executors.newSingleThreadExecutor();
+
     private SpringAnimation springX, springY;
     private float glassTargetX, glassTargetY;
     // How far the grid has scrolled the glass. springY works without it, in grid content space, so a
@@ -229,6 +264,25 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private AppLibraryDialog appLibrary;
     private boolean libraryFocusPending;
     private RecyclerView.OnScrollListener pendingFocusScroll;
+
+    // ── Focused dock app wallpapers ───────────────────────────────────────────
+    private static final Map<String, Integer> DOCK_WALLPAPERS = new HashMap<>();
+    static {
+        DOCK_WALLPAPERS.put("com.google.android.youtube.tv", R.drawable.wallpaper_youtube);
+        DOCK_WALLPAPERS.put("com.apple.atve.androidtv.appletv", R.drawable.wallpaper_appletv);
+        DOCK_WALLPAPERS.put("com.netflix.ninja", R.drawable.wallpaper_netflix);
+        DOCK_WALLPAPERS.put("com.wbd.stream", R.drawable.wallpaper_hbomax);
+        DOCK_WALLPAPERS.put("com.amazon.amazonvideo.livingroom", R.drawable.wallpaper_prime);
+        DOCK_WALLPAPERS.put("com.disney.disneyplus", R.drawable.wallpaper_disney);
+        DOCK_WALLPAPERS.put("com.vidio.android.tv", R.drawable.wallpaper_vidio);
+        DOCK_WALLPAPERS.put("com.android.vending", R.drawable.wallpaper_googleplay);
+        DOCK_WALLPAPERS.put("appnovatica.tv", R.drawable.wallpaper_ottnavigator);
+    }
+    private ImageView dockWallpaperA;
+    private ImageView dockWallpaperB;
+    private View wallpaperScrim;
+    private boolean wallpaperShowingA = false;
+    private String currentWallpaperPkg = "";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     /** Refreshes the network pill when the connection changes: at boot Wi-Fi often connects after Home is shown. */
@@ -351,6 +405,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
         if (!cfg.dockTitle) hero.setVisibility(View.GONE);
+
+        // ── Focused dock app wallpaper setup ────────────────────────────────────
+        dockWallpaperA = findViewById(R.id.dockWallpaperA);
+        dockWallpaperB = findViewById(R.id.dockWallpaperB);
+        wallpaperScrim = findViewById(R.id.wallpaperScrim);
+
+        appStats = findViewById(R.id.appStats);
+        statWeeklyTime = findViewById(R.id.statWeeklyTime);
+        statStorage = findViewById(R.id.statStorage);
+
         greeting = findViewById(R.id.greeting);
         clockBlock = findViewById(R.id.leftBlock);
         greetingColor = greeting.getCurrentTextColor();
@@ -377,47 +441,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         grid = findViewById(R.id.grid);
         rtlAppGrid = getResources().getBoolean(R.bool.rtl_app_grid);
-        // Mirror only the app grid; the header and other locales keep their own layouts.
-        grid.setLayoutManager(new GridLayoutManager(this, COLUMNS) {
-            @Override
-            protected boolean isLayoutRTL() {
-                return rtlAppGrid;
-            }
-
-            /**
-             * Every "bring this tile on screen" scroll lands here, both RecyclerView's own on focus and
-             * onTileFocused's. The stock version treats the grid's top padding as the visible top, but that
-             * padding only pushes the dock down the screen: grid rows scroll up into it. With the stock rule,
-             * Up into a row above the padding dragged that row down to the padding line, cut it off at the
-             * bottom of the screen and could scroll the focused tile out entirely, dropping focus into the
-             * top bar. Grid tiles now scroll just enough to show the rect between the grid's top edge and its
-             * bottom; dock tiles are left to onTileFocused, which parks the dock row on the padding line.
-             */
-            @Override
-            public boolean requestChildRectangleOnScreen(@NonNull RecyclerView parent, @NonNull View child,
-                                                         @NonNull Rect rect, boolean immediate,
-                                                         boolean focusedChildVisible) {
-                if (dockRow && getPosition(child) < COLUMNS) return false;
-                int top = child.getTop() + rect.top;
-                int bottom = top + rect.height();
-                // A row already fully on screen stays put, even inside the bottom padding (the last row
-                // rows_below_dock leaves visible ends there; nudging it up was the bug). A row that has to scroll
-                // in still stops at the padding line, clear of the screen edge, as before.
-                int limitBottom = getHeight() - getPaddingBottom();
-                int dy;
-                if (top < 0) dy = top;
-                else if (bottom <= getHeight()) dy = 0;
-                else dy = Math.min(top, bottom - limitBottom);
-                if (dy == 0) return false;
-                if (immediate || reducedMotion || !animations) parent.scrollBy(0, dy);
-                else parent.smoothScrollBy(0, dy);
-                return true;
-            }
-        });
-        ((GridLayoutManager) grid.getLayoutManager()).setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
-            @Override public int getSpanSize(int position) { return adapter != null && adapter.isLibraryAt(position) ? COLUMNS : 1; }
-        });
-        grid.setHasFixedSize(true);
+        // Horizontal layout for the PS5 dock row on the left side
+        grid.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         grid.setItemAnimator(null);
         // Tiles that scroll out while one is carried come back from the view cache without a rebind; set their
         // dimming again whenever one attaches, so none stays dim after the drop.
@@ -444,31 +469,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         adapter.setSavedOrder(Order.ranks(Order.load(Order.file(this)), dockApps));
         grid.setAdapter(adapter);
 
-        // tvOS layout: push the dock row towards the bottom of the screen, leaving room for
-        // rows_below_dock grid rows under it; the rest of the grid stays below until you press Down.
-        int rowsBelowDock = cfg.rowsBelowDock;
+        FrameLayout.LayoutParams gridLp = (FrameLayout.LayoutParams) grid.getLayoutParams();
+        if (gridLp != null) {
+            gridLp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+            gridLp.gravity = Gravity.START | Gravity.TOP;
+            grid.setLayoutParams(gridLp);
+        }
+
+        // PS5 layout: row is at the top under the first layer container
         grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            int h = b - t;
-            // Item height follows the tile size, which follows the columns and the rows that must fit (AppAdapter.tileWidthPx).
-            int inner = (r - l) - grid.getPaddingLeft() - grid.getPaddingRight();
-            int tileW = AppAdapter.tileWidthPx(inner, h, COLUMNS, rowsBelowDock, cfg.dockTitle, cfg.dockRow, density);
-            int itemH = AppAdapter.itemHeightPx(AppAdapter.tileHeightPx(tileW), density);
-            int dockRow = itemH + (int) (AppAdapter.DOCK_EXTRA_DP * density);   // item height plus DockDecoration offsets
-            int gridRows = itemH * rowsBelowDock;
-            // Keep the hero below the header when the library is enabled on a short screen,
-            // even when the theme requests an extra visible row below the dock.
-            int shelfClearance = cfg.appLibrary ? hero.getMeasuredHeight() + (int) (40 * density) : 0;
-            int want = Math.max(shelfClearance, h - dockRow - gridRows - (int) (AppAdapter.BOTTOM_ROOM_DP * density));
-            // Where the rows cannot fit even at the smallest tile (3 rows with the title on), the title keeps its
-            // room above the dock and the last rows run off the bottom instead of the title drawing over the clock.
-            if (MainActivity.this.dockRow && cfg.dockTitle && rowsBelowDock > 0) want = Math.max(want, (int) (AppAdapter.TITLE_ROOM_DP * density));
-            // No dock to push down: the grid starts at the top, with room for the first row's zoom and glass.
-            if (!MainActivity.this.dockRow) want = (int) (AppAdapter.TOP_ROOM_DP * density);
+            int want = (int) (14 * density);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
             }
-            // Cold start or column count > 4: the first focus can run before the grid has its final width or
-            // padding, leaving the glass at the XML design size until a key is pressed.
             grid.post(this::refitGlass);
         });
 
@@ -508,6 +521,78 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
 
+        tabHome = findViewById(R.id.tabHome);
+        tabApp = findViewById(R.id.tabApp);
+        updateTabStyles();
+        appsGrid = findViewById(R.id.appsGrid);
+        if (appsGrid != null) {
+            appsGrid.setLayoutManager(new GridLayoutManager(this, 5));
+            final float gridDensity = getResources().getDisplayMetrics().density;
+            final int hGap = Math.round(14 * gridDensity);
+            final int vGap = Math.round(14 * gridDensity);
+            appsGrid.addItemDecoration(new RecyclerView.ItemDecoration() {
+                @Override
+                public void getItemOffsets(@NonNull Rect outRect, @NonNull View view,
+                                           @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+                    outRect.set(hGap, vGap, hGap, vGap);
+                }
+            });
+            allAppsAdapter = new AllAppsAdapter(this, tabApp);
+            appsGrid.setAdapter(allAppsAdapter);
+            allAppsAdapter.reload();
+        }
+
+        if (tabHome != null) {
+            tabHome.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus) selectHomeTab();
+            });
+            tabHome.setOnClickListener(v -> selectHomeTab());
+            tabHome.setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    focusTile(lastFocused % COLUMNS);
+                    return true;
+                }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                    if (tabApp != null) tabApp.requestFocus();
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        if (tabApp != null) {
+            tabApp.setOnFocusChangeListener((v, hasFocus) -> {
+                if (hasFocus) selectAppsTab();
+            });
+            tabApp.setOnClickListener(v -> {
+                selectAppsTab();
+                if (appsGrid != null && appsGrid.getChildCount() > 0) {
+                    appsGrid.getChildAt(0).requestFocus();
+                }
+            });
+            tabApp.setOnKeyListener((v, keyCode, event) -> {
+                if (event.getAction() != KeyEvent.ACTION_DOWN) return false;
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                    if (appsGrid != null && appsGrid.getChildCount() > 0) {
+                        appsGrid.getChildAt(0).requestFocus();
+                    } else if (appsGrid != null) {
+                        appsGrid.requestFocus();
+                    }
+                    return true;
+                }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                    if (tabHome != null) tabHome.requestFocus();
+                    return true;
+                }
+                if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                    btnInputs.requestFocus();
+                    return true;
+                }
+                return false;
+            });
+        }
+
         btnInputs = findViewById(R.id.btnInputs);
         View btnSettings = findViewById(R.id.btnSettings);
         btnInputs.setOnClickListener(v -> showInputs());
@@ -527,13 +612,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             libraryFromTopBar = true;   // closing it goes back to this button, not to the pill after the last row
         });
         btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
-        iconOnlyButtons = cfg.iconOnlyButtons;
-        wifiIconOnly = iconOnlyButtons && cfg.wifiLabelWidth <= 0;
-        if (iconOnlyButtons) {
-            if (cfg.wifiLabelWidth > 0) btnWifi.setMaxWidth(Math.round(cfg.wifiLabelWidth * density));
-            else makeIconOnly(btnWifi);
-            makeIconOnly((TextView) btnSettings);
-        }
+        makeIconOnly((TextView) btnInputs);
+        makeIconOnly(btnWifi);
+        makeIconOnly((TextView) btnSettings);
+        wifiIconOnly = true;
         btnSettings.setOnLongClickListener(v -> {
             showSettingsMenu();
             return true;
@@ -553,7 +635,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             int firstButton = btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : firstTopButton().getId();
             int leftButton = rtlMenuBar ? R.id.btnSettings : firstButton;
             int rightButton = rtlMenuBar ? firstButton : R.id.btnSettings;
-            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == leftButton;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+                if (v.getId() == firstButton) {
+                    return true;
+                }
+                return v.getId() == leftButton;
+            }
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == rightButton;
         };
         btnInputs.setOnKeyListener(pillKeys);
@@ -594,6 +681,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         // Not after recreate(): the launch intent survives it and would open the settings again.
         if (savedInstanceState == null) openLauncherSettingsIfAsked(getIntent());
+        grid.post(() -> focusTile(0));
     }
 
     private boolean openLauncherSettingsIfAsked(Intent intent) {
@@ -622,6 +710,81 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Still on screen (the quick panel was over it, or Home was already in front): the tiles are current,
             // so only go back to the first one; rebuilding would replay the entrance animation for nothing.
             grid.post(() -> focusTile(0));
+        }
+    }
+
+    void scrollToTop() {
+        grid.scrollToPosition(0);
+        grid.post(() -> focusTile(0));
+    }
+
+    private void updateTabStyles() {
+        if (tabHome != null) {
+            tabHome.setSelected(!isAppsTab);
+        }
+        if (tabApp != null) {
+            tabApp.setSelected(isAppsTab);
+        }
+    }
+
+    private void selectHomeTab() {
+        if (!isAppsTab) return;
+        isAppsTab = false;
+        updateTabStyles();
+        if (grid != null) grid.setVisibility(View.VISIBLE);
+        if (appsGrid != null) appsGrid.setVisibility(View.GONE);
+        if (hero != null) hero.setVisibility(View.VISIBLE);
+        if (appStats != null) appStats.setVisibility(View.VISIBLE);
+        View wallpaperScrim = findViewById(R.id.wallpaperScrim);
+        if (wallpaperScrim != null) wallpaperScrim.setAlpha(1.0f);
+        currentWallpaperPkg = "";
+        int pos = lastFocused % COLUMNS;
+        updateDockWallpaper(adapter.packageAt(pos));
+        updateAppStats(adapter.packageAt(pos), false);
+        hideGlass();
+        focusTile(lastFocused % COLUMNS);
+    }
+
+    private void selectAppsTab() {
+        if (isAppsTab) return;
+        isAppsTab = true;
+        updateTabStyles();
+        if (grid != null) grid.setVisibility(View.GONE);
+        if (appsGrid != null) appsGrid.setVisibility(View.VISIBLE);
+        if (hero != null) hero.setVisibility(View.GONE);
+        if (appStats != null) appStats.setVisibility(View.GONE);
+        hideGlass();
+        setSpecificWallpaper(R.drawable.wallpaper_list_of_apps);
+        if (allAppsAdapter != null) allAppsAdapter.reload();
+    }
+
+    private void setSpecificWallpaper(int resId) {
+        if (dockWallpaperA == null || dockWallpaperB == null) return;
+        currentWallpaperPkg = "__specific__" + resId;
+        final ImageView incoming = wallpaperShowingA ? dockWallpaperB : dockWallpaperA;
+        final ImageView outgoing = wallpaperShowingA ? dockWallpaperA : dockWallpaperB;
+        wallpaperShowingA = !wallpaperShowingA;
+
+        incoming.setImageResource(resId);
+        incoming.animate().cancel();
+        outgoing.animate().cancel();
+        if (wallpaperScrim != null) wallpaperScrim.animate().cancel();
+
+        incoming.setAlpha(0f);
+        incoming.setVisibility(View.VISIBLE);
+        if (wallpaperScrim != null) {
+            wallpaperScrim.setVisibility(View.VISIBLE);
+            wallpaperScrim.setAlpha(0.65f);
+        }
+
+        if (animations && !reducedMotion) {
+            incoming.animate().alpha(1f).setDuration(450)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                    .start();
+            outgoing.animate().alpha(0f).setDuration(450).start();
+        } else {
+            incoming.setAlpha(1f);
+            outgoing.setAlpha(0f);
         }
     }
 
@@ -658,6 +821,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         rebuildOnResume = false;
         updateGreeting();
         updateRace();
+        if (allAppsAdapter != null) allAppsAdapter.reload();
         // The network and Inputs pills keep their state while Home is in the background, and callbacks update them
         // when the network or the inputs change, so this refresh only catches anything missed. Its binder calls
         // (about 7 ms on a TCL C755, most of it WifiManager.getConnectionInfo) would hold up the first frame back
@@ -710,6 +874,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             heroArt.setAlpha(0f);
         }
         reloadTiles();
+        prewarmAppStats();
         if (animate && animations && !reducedMotion) grid.scheduleLayoutAnimation();
 
         if (restoreFocus) {
@@ -847,6 +1012,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        statsExecutor.shutdown();
         wallpaperPlayer.close();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
@@ -889,6 +1055,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            int code = event.getKeyCode();
+            if ((code == KeyEvent.KEYCODE_BACK || code == KeyEvent.KEYCODE_ESCAPE) && isAppsTab) {
+                selectHomeTab();
+                return true;
+            }
+        }
         if (handleSettingsKey(event)) return true;
         if (!reordering) return super.dispatchKeyEvent(event);
         if (dockEditing) return dispatchDockEdit(event);
@@ -1107,7 +1280,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * afterwards if the moved tile itself ends up off screen.
      */
     private void keepScroll(Runnable change) {
-        GridLayoutManager lm = (GridLayoutManager) grid.getLayoutManager();
+        LinearLayoutManager lm = (LinearLayoutManager) grid.getLayoutManager();
         int first = lm.findFirstVisibleItemPosition();
         View firstView = first != RecyclerView.NO_POSITION ? lm.findViewByPosition(first) : null;
         int offset = firstView != null ? lm.getDecoratedTop(firstView) - grid.getPaddingTop() : 0;
@@ -1207,22 +1380,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             glassAccent = accent;
             glass.setAccent(accent);
         }
+        springX.cancel();
+        springY.cancel();
+        glass.setTranslationX(x);
+        glass.setTranslationY(y);
         if (!glassShown) {
-            springX.cancel();
-            springY.cancel();
-            glass.setTranslationX(x);
-            glass.setTranslationY(y);
-            if (animations) glass.animate().alpha(1f).setDuration(reducedMotion ? 100 : 180).start();
-            else glass.setAlpha(1f);
+            glass.setAlpha(1f);
             glassShown = true;
-        } else if (!animations) {
-            springX.cancel();
-            springY.cancel();
-            glass.setTranslationX(x);
-            glass.setTranslationY(y);
-        } else {
-            springX.animateToFinalPosition(x);
-            springY.animateToFinalPosition(y - glassScrollShift);
         }
         View item = (View) card.getParent();
         if (dockRow && position < COLUMNS) {
@@ -1236,7 +1400,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 if (!animations || reducedMotion) grid.scrollBy(0, dy);
                 else grid.smoothScrollBy(0, dy);
             }
-            showHero(position, scroll ? r.top - dy : r.top);
+            showHero(position);
         } else {
             // Below the dock (or in a plain grid) the glow follows the tile without the big name; letting it
             // fade out left the grid on plain black.
@@ -1263,93 +1427,45 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
-    // ---- top shelf -------------------------------------------------------------------------------
+    // ---- bottom-left title (PS5 style: stuck to bottom-left with status dots above) --------------
 
-    private void showHero(int position, float dockTopInRoot) {
+    private void showHero(int position) {
         String label = adapter.labelAt(position);
         int color = adapter.ambientColorAt(position);
-        float y = dockTopInRoot - 14 * density - 26 * density - hero.getHeight();
         boolean changed = !label.contentEquals(heroName.getText());
         if (cinematic) showHeroArt(position);
+        // Dynamic wallpaper: transition to the focused dock app's wallpaper artwork.
+        if (dockRow) updateDockWallpaper(adapter.packageAt(position));
+        if (dockRow) updateAppStats(adapter.packageAt(position), changed);
 
-        if (!animations || reducedMotion) {
-            // Snap the shelf instead of sliding and fading it: each of those frames repaints the
-            // full-screen panel, and this switch exists for the GPUs that cannot afford it.
-            hero.animate().cancel();
-            ambient.animate().cancel();
-            fillHero(position, label);
-            hero.setY(y);
-            hero.setTranslationX(0f);
-            hero.setAlpha(1f);
-            if (ambientGlow) {
-                setAmbient(color);
-                if (!animations) {
-                    ambient.setAlpha(1f);
-                } else if (!heroShown) {
-                    ambient.setAlpha(0f);
-                    ambient.animate().alpha(1f).setDuration(160).start();
-                }
-            }
-            heroShown = true;
-            return;
+        hero.animate().cancel();
+        ambient.animate().cancel();
+        fillHero(position, label);
+        hero.setAlpha(1f);
+        if (ambientGlow) {
+            setAmbient(color);
+            ambient.setAlpha(1f);
         }
-
-        if (!heroShown) {
-            stopAmbientAnimation();
-            hero.animate().cancel();
-            ambient.animate().cancel();
-            fillHero(position, label);
-            hero.setY(y);
-            hero.setTranslationX(0f);
-            hero.animate().alpha(1f).setDuration(260).start();
-            if (ambientGlow) {
-                setAmbient(color);
-                ambient.animate().alpha(1f).setDuration(600).start();
-            }
-            heroShown = true;
-        } else if (changed) {
-            if (advancedEffects) hero.animate().cancel();
-            hero.animate().alpha(0f).translationX(-12 * density).setDuration(120).withEndAction(() -> {
-                fillHero(position, label);
-                hero.setY(y);
-                hero.setTranslationX(12 * density);
-                hero.animate().alpha(1f).translationX(0f).setDuration(200).start();
-            }).start();
-            if (ambientGlow && advancedEffects) {
-                transitionAmbient(color);
-            } else if (ambientGlow && color != ambientColor) {
-                ambient.animate().alpha(0.35f).setDuration(200).withEndAction(() -> {
-                    setAmbient(color);
-                    ambient.animate().alpha(1f).setDuration(500).start();
-                }).start();
-            }
-        } else {
-            hero.setY(y);
-        }
+        heroShown = true;
     }
 
-    /** The shelf's text for this dock app: its name and, on the cinematic shelf, "Last opened" and the dots. */
+    /** The shelf's text for this dock app: its name and the status dots. */
     private void fillHero(int position, String label) {
         heroName.setText(label);
-        if (!cinematic) return;
-        updateHeroMeta(position);
         updateHeroDots(position);
     }
 
     // ---- cinematic shelf -------------------------------------------------------------------------
 
-    /** The parts that never change: a larger name, the meta line and the dots, the artwork and the scrim. */
+    /** The parts that never change: large title and status dots. */
     private void setUpCinematicShelf() {
-        heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 68f);
-        heroName.setLetterSpacing(-0.025f);
-        heroMeta.setVisibility(View.INVISIBLE);   // keeps its height, so the name does not jump when it fills in
+        heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 54f);
+        heroName.setLetterSpacing(-0.02f);
+        heroMeta.setVisibility(View.GONE);
         heroDots.setVisibility(View.VISIBLE);
-        heroArt.setVisibility(View.VISIBLE);
-        // One stretched bitmap: apply its alpha while drawing instead of through an offscreen buffer.
-        heroArt.forceHasOverlappingRendering(false);
+        heroArt.setVisibility(View.GONE);
         View scrim = findViewById(R.id.heroScrim);
-        scrim.setBackground(scrimDrawable());
-        scrim.setVisibility(View.VISIBLE);
+        if (scrim != null) scrim.setVisibility(View.GONE);
     }
 
     /**
@@ -1520,6 +1636,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * name above the dock does not show (every grid tile has its name underneath).
      */
     private void showGlowOnly(int position) {
+        hideDockWallpaper();  // focus moved out of the dock row
+        hideAppStats();
         int color = adapter.ambientColorAt(position);
         stopAmbientAnimation();
         hero.animate().cancel();
@@ -1547,6 +1665,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void hideHero() {
         if (!heroShown) return;
+        hideDockWallpaper();
+        hideAppStats();
         stopAmbientAnimation();
         hero.animate().cancel();
         ambient.animate().cancel();
@@ -1561,6 +1681,212 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             ambient.setAlpha(0f);
             heroArt.setAlpha(0f);
         }
+    }
+
+    // ---- focused dock app wallpapers ---------------------------------------------------------
+
+    /**
+     * Cross-fades to the cinematic show wallpaper attached to the focused dock app.
+     */
+    private void updateDockWallpaper(String pkg) {
+        if (pkg == null) return;
+        if (pkg.equals(currentWallpaperPkg)) return;
+        currentWallpaperPkg = pkg;
+        Integer resId = DOCK_WALLPAPERS.get(pkg);
+        if (resId == null) {
+            hideDockWallpaper();
+            return;
+        }
+
+        if (dockWallpaperA == null || dockWallpaperB == null) return;
+
+        final ImageView incoming = wallpaperShowingA ? dockWallpaperB : dockWallpaperA;
+        final ImageView outgoing = wallpaperShowingA ? dockWallpaperA : dockWallpaperB;
+        wallpaperShowingA = !wallpaperShowingA;
+
+        incoming.setImageResource(resId);
+        incoming.animate().cancel();
+        outgoing.animate().cancel();
+        if (wallpaperScrim != null) wallpaperScrim.animate().cancel();
+
+        incoming.setAlpha(0f);
+        incoming.setVisibility(View.VISIBLE);
+        incoming.setAlpha(1f);
+        outgoing.setAlpha(0f);
+        if (wallpaperScrim != null) {
+            wallpaperScrim.setVisibility(View.VISIBLE);
+            wallpaperScrim.setAlpha(1f);
+        }
+    }
+
+    /**
+     * Smoothly fades out the dock wallpapers when focus leaves the dock into the app grid.
+     */
+    private void hideDockWallpaper() {
+        if (currentWallpaperPkg.isEmpty()) return;
+        currentWallpaperPkg = "";
+        if (dockWallpaperA != null) dockWallpaperA.animate().cancel();
+        if (dockWallpaperB != null) dockWallpaperB.animate().cancel();
+        if (wallpaperScrim != null) wallpaperScrim.animate().cancel();
+
+        if (animations && !reducedMotion) {
+            if (dockWallpaperA != null) dockWallpaperA.animate().alpha(0f).setDuration(300).start();
+            if (dockWallpaperB != null) dockWallpaperB.animate().alpha(0f).setDuration(300).start();
+            if (wallpaperScrim != null) wallpaperScrim.animate().alpha(0f).setDuration(300).start();
+        } else {
+            if (dockWallpaperA != null) dockWallpaperA.setAlpha(0f);
+            if (dockWallpaperB != null) dockWallpaperB.setAlpha(0f);
+            if (wallpaperScrim != null) wallpaperScrim.setAlpha(0f);
+        }
+    }
+
+    // ── App statistics on bottom right ────────────────────────────────────────
+
+    private void updateAppStats(String pkg, boolean changed) {
+        if (appStats == null) return;
+        currentStatsPkg = pkg != null ? pkg : "";
+        if (currentStatsPkg.isEmpty()) {
+            hideAppStats();
+            return;
+        }
+
+        AppStats cached = appStatsCache.get(currentStatsPkg);
+        if (cached != null) {
+            showOrUpdateAppStatsView(cached, changed);
+        } else {
+            final String targetPkg = currentStatsPkg;
+            statsExecutor.execute(() -> {
+                AppStats s = computeAppStats(targetPkg);
+                handler.post(() -> {
+                    appStatsCache.put(targetPkg, s);
+                    if (targetPkg.equals(currentStatsPkg)) {
+                        showOrUpdateAppStatsView(s, changed);
+                    }
+                });
+            });
+        }
+    }
+
+    private void showOrUpdateAppStatsView(AppStats s, boolean changed) {
+        if (appStats == null) return;
+        appStats.setVisibility(View.VISIBLE);
+        appStats.animate().cancel();
+        applyAppStats(s);
+        appStats.setAlpha(1f);
+    }
+
+    private void hideAppStats() {
+        currentStatsPkg = "";
+        if (appStats == null) return;
+        appStats.animate().cancel();
+        if (animations && !reducedMotion) {
+            appStats.animate().alpha(0f).setDuration(160).start();
+        } else {
+            appStats.setAlpha(0f);
+        }
+    }
+
+    private void applyAppStats(AppStats s) {
+        if (statWeeklyTime != null) statWeeklyTime.setText(s.weeklyTime);
+        if (statStorage != null) statStorage.setText(s.storage);
+    }
+
+    private AppStats computeAppStats(String pkg) {
+        if (pkg == null || pkg.isEmpty()) {
+            return new AppStats("0 hr", "0 hr", "0 MB");
+        }
+
+        long weeklyMillis = 0;
+        long totalMillis = 0;
+        try {
+            UsageStatsManager usm = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+            if (usm != null) {
+                long now = System.currentTimeMillis();
+                long oneWeekAgo = now - 7L * 24 * 3600 * 1000L;
+                long totalBegin = now - 365L * 24 * 3600 * 1000L * 3L;
+
+                Map<String, UsageStats> weeklyMap = usm.queryAndAggregateUsageStats(oneWeekAgo, now);
+                if (weeklyMap != null && weeklyMap.containsKey(pkg)) {
+                    UsageStats s = weeklyMap.get(pkg);
+                    if (s != null) weeklyMillis = s.getTotalTimeInForeground();
+                }
+
+                Map<String, UsageStats> totalMap = usm.queryAndAggregateUsageStats(totalBegin, now);
+                if (totalMap != null && totalMap.containsKey(pkg)) {
+                    UsageStats s = totalMap.get(pkg);
+                    if (s != null) totalMillis = s.getTotalTimeInForeground();
+                }
+
+                if (totalMillis < weeklyMillis) {
+                    totalMillis = weeklyMillis;
+                }
+            }
+        } catch (Throwable ignored) {}
+
+        long storageBytes = 0;
+        try {
+            StorageStatsManager ssm = (StorageStatsManager) getSystemService(Context.STORAGE_STATS_SERVICE);
+            if (ssm != null) {
+                StorageStats ss = ssm.queryStatsForPackage(StorageManager.UUID_DEFAULT, pkg, Process.myUserHandle());
+                storageBytes = ss.getAppBytes() + ss.getDataBytes() + ss.getCacheBytes();
+            }
+        } catch (Throwable t) {
+            // Fallback: estimate from application APK source dirs
+            try {
+                ApplicationInfo ai = getPackageManager().getApplicationInfo(pkg, 0);
+                if (ai.sourceDir != null) storageBytes += new File(ai.sourceDir).length();
+                if (ai.splitSourceDirs != null) {
+                    for (String split : ai.splitSourceDirs) {
+                        storageBytes += new File(split).length();
+                    }
+                }
+            } catch (Throwable ignored) {}
+        }
+
+        String totalTimeStr = formatHours(totalMillis);
+        String weeklyTimeStr = formatHours(weeklyMillis);
+        String storageStr = formatStorage(storageBytes);
+
+        return new AppStats(totalTimeStr, weeklyTimeStr, storageStr);
+    }
+
+    private String formatHours(long millis) {
+        if (millis <= 0) return "0 hr";
+        double hours = millis / (1000.0 * 3600.0);
+        if (hours < 0.1) return "< 0.1 hr";
+        if (hours >= 100.0) return String.format(Locale.US, "%.0f hr", hours);
+        return String.format(Locale.US, "%.1f hr", hours);
+    }
+
+    private String formatStorage(long bytes) {
+        if (bytes <= 0) return "0 MB";
+        long mb = Math.round(bytes / (1024.0 * 1024.0));
+        if (mb == 0 && bytes > 0) return "< 1 MB";
+        return String.format(Locale.US, "%,d MB", mb);
+    }
+
+    private void prewarmAppStats() {
+        if (adapter == null) return;
+        final List<String> pkgs = new ArrayList<>();
+        int count = Math.min(COLUMNS, adapter.appCount());
+        for (int i = 0; i < count; i++) {
+            String p = adapter.packageAt(i);
+            if (p != null && !p.isEmpty()) pkgs.add(p);
+        }
+        statsExecutor.execute(() -> {
+            for (String p : pkgs) {
+                if (!appStatsCache.containsKey(p)) {
+                    AppStats s = computeAppStats(p);
+                    appStatsCache.put(p, s);
+                }
+            }
+            handler.post(() -> {
+                if (!currentStatsPkg.isEmpty()) {
+                    AppStats s = appStatsCache.get(currentStatsPkg);
+                    if (s != null) applyAppStats(s);
+                }
+            });
+        });
     }
 
     private void hideGlass() {
@@ -2589,6 +2915,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             promptsPaused = true;
         }
         reloadTiles();
+        prewarmAppStats();
     }
 
     /** Dropdown under the Settings pill (hold OK): every discovered card, its package and key; OK toggles Shown and Hidden. */

@@ -9,15 +9,19 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,6 +29,7 @@ import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,6 +37,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -89,7 +96,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    static final float FOCUS_SCALE = 1.10f;
+    static final float FOCUS_SCALE = 1.15f;
     /** Design size of a tile (dp); tiles shrink from here when the columns don't fit, see tileWidthPx. */
     static final float DESIGN_W_DP = 180f, DESIGN_H_DP = 101f;
 
@@ -102,7 +109,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (innerWidthPx <= 0 || columns <= 0) return design;
         int cell = innerWidthPx / columns;
         int fit = (int) ((cell - 12 * density) / FOCUS_SCALE);
-        return Math.max(Math.round(80 * density), Math.min(design, fit));
+        return Math.max(Math.round(40 * density), Math.min(design, fit));
     }
 
     static int tileHeightPx(int tileWidthPx) {
@@ -147,6 +154,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
      */
     static int tileWidthPx(int innerWidthPx, int gridHeightPx, int columns, int rowsBelowDock, boolean dockTitle,
                            boolean dockRow, float density) {
+        if (dockRow) return Math.round(92 * density);
         int w = tileWidthPx(innerWidthPx, columns, density);
         if (gridHeightPx <= 0 || rowsBelowDock <= 0) return w;
         float reserved = (dockRow ? DOCK_EXTRA_DP + BOTTOM_ROOM_DP + (dockTitle ? TITLE_ROOM_DP : 0)
@@ -157,7 +165,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         // Shrink at most to MIN_HEIGHT_FIT of the width-only size. Below that the tiles look lost in their wide
         // columns (2 rows under a titled dock came out at 80dp); the rows that still don't fit run off the bottom
         // and scroll, and MainActivity keeps the title's room above the dock.
-        return Math.max(Math.max(Math.round(80 * density), Math.round(w * MIN_HEIGHT_FIT)), Math.min(w, byHeight));
+        return Math.max(Math.max(Math.round(40 * density), Math.round(w * MIN_HEIGHT_FIT)), Math.min(w, byHeight));
     }
 
     /** The smallest share of the width-only tile size that fitting rows_below_dock into the height may go to. */
@@ -199,6 +207,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     /** Tile names and bundled banners that replace the app's own (config.xml, app_labels and app_banners). */
     private final Map<String, String> appLabels, appBanners;
     private final List<Entry> items = new ArrayList<>();
+    private final Map<String, Drawable> smallIconsCache = new HashMap<>();
 
     AppAdapter(Context ctx, TileListener listener, int dockSize, Config cfg) {
         this.ctx = ctx;
@@ -230,6 +239,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
      * so focus follows it); hidden_apps wins over a card, and a card's package in dock_apps takes that slot.
      */
     void reload(List<Cards.Card> cards, List<ResolveInfo> leanback) {
+        smallIconsCache.clear();
         PackageManager pm = ctx.getPackageManager();
         // The LEANBACK query is shared with the module-card check (MainActivity); copy it before adding
         // library apps so the caller's list stays as it was.
@@ -256,7 +266,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         for (ResolveInfo ri : found) {
             if (ri.activityInfo == null) continue;
             String pkg = ri.activityInfo.packageName;
-            if (pkg.equals(ctx.getPackageName()) || !ri.activityInfo.exported
+            if ((pkg.equals(ctx.getPackageName()) && !favourites.contains(pkg)) || !ri.activityInfo.exported
                     || !LibraryApps.visible(tvPackages.contains(pkg), hidden.contains(pkg), added.contains(pkg), removed.contains(pkg))) continue;
             ComponentName component = new ComponentName(pkg, ri.activityInfo.name);
             Cards.Card card = cardByPkg.get(pkg);
@@ -307,7 +317,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     null, null, null, 0));
         }
         items.clear();
-        items.addAll(fresh);
+        if (dockRow) {
+            items.addAll(fresh.subList(0, Math.min(dockSize, fresh.size())));
+        } else {
+            items.addAll(fresh);
+        }
         notifyDataSetChanged();
     }
 
@@ -350,6 +364,207 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         notifyDataSetChanged();
     }
 
+    Drawable getSmallIcon(String pkg, String label) {
+        if (pkg == null) return null;
+        if (smallIconsCache.containsKey(pkg)) {
+            return smallIconsCache.get(pkg);
+        }
+
+        File[] iconDirs = new File[] {
+                new File("/sdcard/Icons"),
+                new File("/sdcard/Pictures/Icons")
+        };
+
+        String cleanLabel = label == null ? "" : label.toLowerCase().replaceAll("[^a-z0-9]", "");
+        String rawLabel = label == null ? "" : label.toLowerCase().trim();
+        String lowerPkg = pkg.toLowerCase();
+
+        List<String> keywords = new ArrayList<>();
+        if (lowerPkg.contains("apple") || rawLabel.contains("apple")) {
+            keywords.add("apple-tv-seeklogo");
+            keywords.add("seeklogo");
+            keywords.add("apple-tv-dark");
+            keywords.add("apple-tv-black");
+        }
+        keywords.add(lowerPkg);
+        if (!cleanLabel.isEmpty()) keywords.add(cleanLabel);
+        if (!rawLabel.isEmpty()) {
+            keywords.add(rawLabel);
+            keywords.add(rawLabel.replace(" ", "-"));
+            keywords.add(rawLabel.replace(" ", "_"));
+            keywords.add(rawLabel.replace(" ", ""));
+        }
+
+        if (lowerPkg.contains("youtube") || rawLabel.contains("youtube")) keywords.add("youtube");
+        if (lowerPkg.contains("apple") || rawLabel.contains("apple")) {
+            keywords.add("apple-tv");
+            keywords.add("appletv");
+            keywords.add("apple");
+        }
+        if (lowerPkg.contains("netflix") || rawLabel.contains("netflix")) keywords.add("netflix");
+        if (lowerPkg.contains("wbd") || lowerPkg.contains("hbo") || rawLabel.contains("hbo") || rawLabel.contains("max")) {
+            keywords.add("hbo");
+            keywords.add("hbomax");
+            keywords.add("max");
+        }
+        if (lowerPkg.contains("amazon") || lowerPkg.contains("prime") || rawLabel.contains("prime")) {
+            keywords.add("prime");
+            keywords.add("primevideo");
+            keywords.add("amazon");
+        }
+        if (lowerPkg.contains("disney") || rawLabel.contains("disney")) {
+            keywords.add("disney");
+            keywords.add("disneyplus");
+        }
+        if (lowerPkg.contains("vidio") || rawLabel.contains("vidio")) keywords.add("vidio");
+        if (lowerPkg.contains("vending") || rawLabel.contains("play")) {
+            keywords.add("play-store");
+            keywords.add("playstore");
+            keywords.add("play");
+            keywords.add("googleplay");
+        }
+        if (lowerPkg.contains("appnovatica") || lowerPkg.contains("navigator") || rawLabel.contains("ott")) {
+            keywords.add("ott");
+            keywords.add("ottnavigator");
+        }
+
+        for (File dir : iconDirs) {
+            if (!dir.exists() || !dir.isDirectory()) continue;
+            File[] files = dir.listFiles();
+            if (files == null) continue;
+
+            File bestMatch = null;
+            for (String kw : keywords) {
+                if (kw.length() < 3) continue;
+                for (File f : files) {
+                    if (!f.isFile() || f.getName().startsWith(".")) continue;
+                    String fName = f.getName().toLowerCase();
+                    if (!fName.endsWith(".png") && !fName.endsWith(".webp") && !fName.endsWith(".jpg") && !fName.endsWith(".jpeg")) continue;
+                    if (fName.startsWith(kw) || fName.contains(kw)) {
+                        bestMatch = f;
+                        break;
+                    }
+                }
+                if (bestMatch != null) break;
+            }
+
+            if (bestMatch != null && bestMatch.canRead()) {
+                try {
+                    Bitmap bmp = BitmapFactory.decodeFile(bestMatch.getAbsolutePath());
+                    if (bmp != null) {
+                        Drawable d = new BitmapDrawable(ctx.getResources(), bmp);
+                        smallIconsCache.put(pkg, d);
+                        return d;
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+
+        // Fallback to bundled assets/icons/
+        try {
+            String[] assetFiles = ctx.getAssets().list("icons");
+            if (assetFiles != null) {
+                String bestAsset = null;
+                for (String kw : keywords) {
+                    if (kw.length() < 3) continue;
+                    for (String af : assetFiles) {
+                        String afLower = af.toLowerCase();
+                        if (afLower.startsWith(kw) || afLower.contains(kw)) {
+                            bestAsset = af;
+                            break;
+                        }
+                    }
+                    if (bestAsset != null) break;
+                }
+                if (bestAsset != null) {
+                    InputStream is = ctx.getAssets().open("icons/" + bestAsset);
+                    Bitmap bmp = BitmapFactory.decodeStream(is);
+                    is.close();
+                    if (bmp != null) {
+                        Drawable d = new BitmapDrawable(ctx.getResources(), bmp);
+                        smallIconsCache.put(pkg, d);
+                        return d;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+
+        smallIconsCache.put(pkg, null);
+        return null;
+    }
+
+    void updateTileVisuals(Holder h, Entry e, boolean focused) {
+        if (e == null || e.kind == Entry.EMPTY) return;
+        float density = ctx.getResources().getDisplayMetrics().density;
+
+        ViewGroup.LayoutParams cardLp = h.card.getLayoutParams();
+        int targetCardW = focused ? Math.round(92 * density) : Math.round(50 * density);
+        int targetCardH = Math.round(52 * density);
+        if (cardLp != null && (cardLp.width != targetCardW || cardLp.height != targetCardH)) {
+            cardLp.width = targetCardW;
+            cardLp.height = targetCardH;
+            h.card.setLayoutParams(cardLp);
+        }
+
+        FrameLayout.LayoutParams bannerLp = (FrameLayout.LayoutParams) h.banner.getLayoutParams();
+        if (focused) {
+            bannerLp.width = FrameLayout.LayoutParams.MATCH_PARENT;
+            bannerLp.height = FrameLayout.LayoutParams.MATCH_PARENT;
+            bannerLp.gravity = Gravity.NO_GRAVITY;
+            h.banner.setLayoutParams(bannerLp);
+            h.banner.setOutlineProvider(null);
+            h.banner.setClipToOutline(false);
+            h.banner.setBackground(null);
+            h.banner.setPadding(0, 0, 0, 0);
+            h.banner.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            if (e.banner != null) {
+                h.banner.setImageDrawable(e.banner);
+                h.banner.setVisibility(View.VISIBLE);
+                h.icon.setVisibility(View.GONE);
+                h.label.setVisibility(View.GONE);
+            } else {
+                h.banner.setImageDrawable(null);
+                h.banner.setVisibility(View.GONE);
+                h.icon.setImageDrawable(e.icon);
+                h.icon.setVisibility(View.VISIBLE);
+                h.label.setText(e.label);
+                h.label.setVisibility(View.VISIBLE);
+            }
+            h.card.setBackground(e.banner != null && e.banner.getOpacity() == PixelFormat.OPAQUE ? null : h.cardBackground);
+        } else {
+            // Unfocused: uniform size, border radius, and white container for Apple TV
+            Drawable small = getSmallIcon(e.pkg, e.label);
+            Drawable iconToShow = small != null ? small : (e.icon != null ? e.icon : e.banner);
+
+            int iconSize = Math.round(50 * density);
+            int cornerRadius = Math.round(14 * density);
+
+            bannerLp.width = iconSize;
+            bannerLp.height = iconSize;
+            bannerLp.gravity = Gravity.CENTER;
+            h.banner.setLayoutParams(bannerLp);
+
+            h.banner.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius);
+                }
+            });
+            h.banner.setClipToOutline(true);
+
+            h.banner.setBackground(null);
+            h.banner.setPadding(0, 0, 0, 0);
+
+            h.banner.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            h.banner.setImageDrawable(iconToShow);
+            h.banner.setVisibility(View.VISIBLE);
+            h.icon.setVisibility(View.GONE);
+            h.label.setVisibility(View.GONE);
+            h.card.setBackground(null);
+        }
+    }
+
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -387,7 +602,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             v.setPadding(v.getPaddingLeft(), pad, v.getPaddingRight(), pad);
         }
         name.setLayoutParams(nameLp);
-        return new Holder(v, listener, animations, advancedEffects, reducedMotion, restNameAlpha);
+        return new Holder(v, this, listener, animations, advancedEffects, reducedMotion, restNameAlpha);
     }
 
     @Override
@@ -408,33 +623,42 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
         h.card.setVisibility(View.VISIBLE);
         h.card.setFocusable(true);
+        h.card.setNextFocusUpId(R.id.btnInputs);
+        h.card.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                if (ctx instanceof Activity) {
+                    View btnInputs = ((Activity) ctx).findViewById(R.id.btnInputs);
+                    if (btnInputs != null && btnInputs.getVisibility() == View.VISIBLE) {
+                        btnInputs.requestFocus();
+                        return true;
+                    }
+                    View btnWifi = ((Activity) ctx).findViewById(R.id.btnWifi);
+                    if (btnWifi != null && btnWifi.getVisibility() == View.VISIBLE) {
+                        btnWifi.requestFocus();
+                        return true;
+                    }
+                    View btnSettings = ((Activity) ctx).findViewById(R.id.btnSettings);
+                    if (btnSettings != null && btnSettings.getVisibility() == View.VISIBLE) {
+                        btnSettings.requestFocus();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        });
         h.name.setText(e.name);
-        // The dock has no labels, unless always_show_names asks for them (DockDecoration then makes room in the band).
-        h.name.setVisibility(dockRow && position < dockSize && restNameAlpha == 0f ? View.INVISIBLE : View.VISIBLE);
+        h.name.setVisibility(View.GONE);
         boolean focused = h.card.isFocused();   // a rebind after reload() can hit the focused tile
-        h.name.setAlpha(focused ? 1f : restNameAlpha);
-        h.card.setScaleX(focused && animations ? focusScale() : 1f);
-        h.card.setScaleY(focused && animations ? focusScale() : 1f);
+        float s = focused ? focusScale() : 1.0f;
+        float a = 1.0f;
+        h.card.setScaleX(s);
+        h.card.setScaleY(s);
+        h.card.setAlpha(a);
         h.card.setTranslationY(focused && advancedEffects ? -4f * ctx.getResources().getDisplayMetrics().density : 0f);
         h.card.setTranslationZ(focused && advancedEffects ? 8f * ctx.getResources().getDisplayMetrics().density : 0f);
         h.banner.setScaleX(focused && advancedEffects ? 1.035f : 1f);
         h.banner.setScaleY(focused && advancedEffects ? 1.035f : 1f);
-        // A fully opaque banner covers the whole card (centerCrop), so the card's own fill under it is drawn for
-        // nothing on every frame; keep it under banners with transparent parts and under icon tiles.
-        h.card.setBackground(e.banner != null && e.banner.getOpacity() == PixelFormat.OPAQUE ? null : h.cardBackground);
-        if (e.banner != null) {
-            h.banner.setImageDrawable(e.banner);
-            h.banner.setVisibility(View.VISIBLE);
-            h.icon.setVisibility(View.GONE);
-            h.label.setVisibility(View.GONE);
-        } else {
-            h.banner.setImageDrawable(null);
-            h.banner.setVisibility(View.GONE);
-            h.icon.setImageDrawable(e.icon);
-            h.icon.setVisibility(View.VISIBLE);
-            h.label.setText(e.label);
-            h.label.setVisibility(View.VISIBLE);
-        }
+        updateTileVisuals(h, e, focused);
         h.card.setOnClickListener(v -> launch(e));
         h.card.setOnLongClickListener(v -> {
             Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + e.pkg));
@@ -449,6 +673,12 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     /** Opens the tile's activity by explicit component, with no extras: a card can name nothing else. */
     private void launch(Entry e) {
+        if (e.pkg.equals(ctx.getPackageName())) {
+            if (ctx instanceof MainActivity) {
+                ((MainActivity) ctx).scrollToTop();
+            }
+            return;
+        }
         if (e.kind == Entry.HOME_SETTINGS) {
             ctx.startActivity(new Intent(ctx, HomeSettingsActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -580,7 +810,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     float focusScale() {
-        return !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
+        return FOCUS_SCALE;
     }
 
     /** A vivid colour sampled from the app's banner (or icon), cached per entry; a card's accent when it set one. */
@@ -642,6 +872,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     static final class Holder extends RecyclerView.ViewHolder {
+        final AppAdapter adapter;
         final View card;
         /** item_app.xml's tile_bg: the dark card behind an icon tile, or behind a banner that has transparent parts. */
         final Drawable cardBackground;
@@ -655,9 +886,10 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         /** Alpha of the name while the tile is not focused (always_show_names). */
         final float restNameAlpha;
 
-        Holder(View v, TileListener listener, boolean animations, boolean advancedEffects,
+        Holder(View v, AppAdapter adapter, TileListener listener, boolean animations, boolean advancedEffects,
                boolean reducedMotion, float restNameAlpha) {
             super(v);
+            this.adapter = adapter;
             card = v.findViewById(R.id.card);
             cardBackground = card.getBackground();
             banner = v.findViewById(R.id.banner);
@@ -691,47 +923,29 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 view.animate().cancel();
                 banner.animate().cancel();
                 name.animate().cancel();
-                float scale = !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
-                float s = focused ? scale : 1f;
-                if (!animations) {
-                    view.setScaleX(1f);
-                    view.setScaleY(1f);
-                    view.setTranslationY(0f);
-                    view.setTranslationZ(0f);
-                    banner.setScaleX(1f);
-                    banner.setScaleY(1f);
-                    name.setAlpha(focused ? 1f : restNameAlpha);
-                    name.setTranslationY(0f);
-                } else if (reducedMotion) {
-                    view.animate().scaleX(s).scaleY(s)
-                            .translationY(focused && advancedEffects ? -4f * density : 0f)
-                            .translationZ(focused && advancedEffects ? 8f * density : 0f)
-                            .setDuration(focused ? 120 : 80)
-                            .setInterpolator(new DecelerateInterpolator())
-                            .withLayer().start();
-                    name.animate().alpha(focused ? 1f : restNameAlpha).setDuration(100).start();
-                    // Same place as the full motion's slide ends: the layout's -6dp is only its starting point, and
-                    // left there the name overlaps the zoomed tile.
-                    // Only on focus: snapping it back to -6dp while it fades out would jump it up over the tile.
-                    if (focused) name.setTranslationY(density * 4f);
-                } else {
-                    view.animate().scaleX(s).scaleY(s)
-                            .translationY(focused && advancedEffects ? -4f * density : 0f)
-                            .translationZ(focused && advancedEffects ? 8f * density : 0f)
-                            .setDuration(advancedEffects ? (focused ? 220 : 170) : (focused ? 260 : 180))
-                            .setInterpolator(new OvershootInterpolator(focused ? (advancedEffects ? 0.7f : 1.6f) : 0f))
-                            .withLayer().start();
-                    if (advancedEffects) {
-                        banner.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f)
-                                .setDuration(280).start();
-                    }
-                    name.animate().alpha(focused ? 1f : restNameAlpha)
-                            .translationY(focused ? density * 4f : -density * 6f)
-                            .setDuration(220).start();
-                }
                 int pos = getBindingAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION && pos < adapter.items.size()) {
+                    adapter.updateTileVisuals(this, adapter.items.get(pos), focused);
+                }
+                float scale = adapter.focusScale();
+                float s = focused ? scale : 1.0f;
+                float a = 1.0f;
+                view.setScaleX(s);
+                view.setScaleY(s);
+                view.setAlpha(a);
+                view.setTranslationY(0f);
+                view.setTranslationZ(0f);
+                banner.setScaleX(1f);
+                banner.setScaleY(1f);
+                name.setAlpha(0f);
+                name.setTranslationY(0f);
                 if (focused && listener != null && pos != RecyclerView.NO_POSITION) {
                     listener.onTileFocused(pos, view);
+                    view.post(() -> {
+                        if (view.isFocused() && listener != null) {
+                            listener.onTileFocused(pos, view);
+                        }
+                    });
                 }
             });
         }

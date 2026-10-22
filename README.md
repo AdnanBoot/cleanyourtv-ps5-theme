@@ -51,6 +51,9 @@ Suggested: Claude Code on [0G Private Computer](https://pc.0g.ai), one API key f
 | **2. On your computer** | Paste [`PROMPT.md`](PROMPT.md) into your assistant and fill in your TV model. |
 | **3. Follow along** | Accept "Allow USB debugging?" on the TV, then answer the checklist: which apps you use, which four go in the dock, whether to keep the voice assistant, Chromecast and updates. |
 
+> [!TIP]
+> **Replicate Custom Launcher**: To replicate this custom Apple TV 4K style launcher with your own custom dock apps, show wallpapers, and stats card using a single copy-paste prompt, check out **[REPLICATE_LAUNCHER.md](REPLICATE_LAUNCHER.md)**.
+
 The assistant backs up, debloats, builds and installs the launcher, and checks each step with
 screenshots pulled from the TV. With this repo as context it takes about fifteen minutes.
 

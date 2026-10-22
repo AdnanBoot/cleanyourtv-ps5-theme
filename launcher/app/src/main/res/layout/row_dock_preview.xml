@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The dock hover preview row — a horizontal list of up to 5 poster cards that fades in
+  above the dock band whenever a dock tile has focus. Placed in the root FrameLayout so it
+  overlays the grid without pushing anything up.
+
+  alpha=0 and translationY=+24dp at rest; animated to alpha=1 / translationY=0 on show.
+  focusable=false + blocksDescendants keeps D-pad away from the cards.
+-->
+<androidx.recyclerview.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dockPreviewRow"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="bottom"
+    android:layout_marginStart="56dp"
+    android:layout_marginEnd="56dp"
+    android:layout_marginBottom="0dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp"
+    android:clipToPadding="false"
+    android:overScrollMode="never"
+    android:scrollbars="none"
+    android:alpha="0"
+    android:translationY="24dp"
+    android:focusable="false"
+    android:focusableInTouchMode="false"
+    android:descendantFocusability="blocksDescendants"
+    android:importantForAccessibility="no"
+    android:visibility="gone" />

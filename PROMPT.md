@@ -156,3 +156,9 @@ Verify
 
 Expect to answer three or four checklist questions (which apps you use, which four go in the dock,
 whether to keep the voice assistant, Chromecast and firmware updates). Everything is reversible.
+
+---
+
+## Replicate Custom Apple TV 4K Launcher (Single Prompt)
+
+If you already have a debloated TV or cloned this repo and want to replicate this custom Apple TV 4K style launcher with custom dock apps and cinematic show wallpapers with a single copy-paste prompt, see **[REPLICATE_LAUNCHER.md](REPLICATE_LAUNCHER.md)**.
