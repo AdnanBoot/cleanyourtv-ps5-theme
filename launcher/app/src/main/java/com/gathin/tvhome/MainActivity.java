@@ -739,7 +739,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (wallpaperScrim != null) wallpaperScrim.setAlpha(1.0f);
         currentWallpaperPkg = "";
         int pos = lastFocused % COLUMNS;
-        updateDockWallpaper(adapter.packageAt(pos));
+        updateDockWallpaper(adapter.packageAt(pos), pos);
         updateAppStats(adapter.packageAt(pos), false);
         hideGlass();
         focusTile(lastFocused % COLUMNS);
@@ -836,6 +836,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (showStats) startStats();
         sky.update();
         wallpaperPlayer.start();
+        ImageView currentWp = wallpaperShowingA ? dockWallpaperA : dockWallpaperB;
+        if (currentWp != null && currentWp.getVisibility() == View.VISIBLE && currentWp.getAlpha() > 0.5f) {
+            startKenBurnsEffect(currentWp, lastFocused % COLUMNS);
+        }
         handler.postDelayed(minuteTick, MINUTE_MS);
         if (festive && diya != null) {
             diya.start();
@@ -958,6 +962,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArt.animate().cancel();
         handler.removeCallbacks(minuteTick);
         stopStats();
+        stopKenBurnsEffect();
         if (diya != null) diya.stop();
         cancelPendingFocusScroll();
         // Nothing of ours stays on screen over another app; an undecided prompt simply returns next time.
@@ -1435,7 +1440,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         boolean changed = !label.contentEquals(heroName.getText());
         if (cinematic) showHeroArt(position);
         // Dynamic wallpaper: transition to the focused dock app's wallpaper artwork.
-        if (dockRow) updateDockWallpaper(adapter.packageAt(position));
+        if (dockRow) updateDockWallpaper(adapter.packageAt(position), position);
         if (dockRow) updateAppStats(adapter.packageAt(position), changed);
 
         hero.animate().cancel();
@@ -1686,9 +1691,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     // ---- focused dock app wallpapers ---------------------------------------------------------
 
     /**
-     * Cross-fades to the cinematic show wallpaper attached to the focused dock app.
+     * Cross-fades to the cinematic show wallpaper attached to the focused dock app with a smooth Ken Burns animation.
      */
-    private void updateDockWallpaper(String pkg) {
+    private void updateDockWallpaper(String pkg, int position) {
         if (pkg == null) return;
         if (pkg.equals(currentWallpaperPkg)) return;
         currentWallpaperPkg = pkg;
@@ -1709,13 +1714,103 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         outgoing.animate().cancel();
         if (wallpaperScrim != null) wallpaperScrim.animate().cancel();
 
-        incoming.setAlpha(0f);
         incoming.setVisibility(View.VISIBLE);
         incoming.setAlpha(1f);
         outgoing.setAlpha(0f);
+        outgoing.setScaleX(1.0f);
+        outgoing.setScaleY(1.0f);
+        outgoing.setTranslationX(0f);
+        outgoing.setTranslationY(0f);
         if (wallpaperScrim != null) {
             wallpaperScrim.setVisibility(View.VISIBLE);
             wallpaperScrim.setAlpha(1f);
+        }
+
+        startKenBurnsEffect(incoming, position);
+    }
+
+    // ---- Ken Burns cinematic wallpaper animation ------------------------------------------------
+
+    private void startKenBurnsEffect(ImageView iv, int direction) {
+        if (iv == null) return;
+        iv.animate().cancel();
+
+        float density = getResources().getDisplayMetrics().density;
+        final float startScale;
+        final float targetScale;
+        final float targetX;
+        final float targetY;
+
+        switch (Math.abs(direction) % 4) {
+            case 0: // Zoom in & drift top-left
+                startScale = 1.0f;
+                targetScale = 1.08f;
+                targetX = -16f * density;
+                targetY = -10f * density;
+                break;
+            case 1: // Start slightly zoomed, drift bottom-right & zoom out
+                startScale = 1.07f;
+                targetScale = 1.01f;
+                targetX = 14f * density;
+                targetY = 8f * density;
+                break;
+            case 2: // Zoom in & drift top-right
+                startScale = 1.0f;
+                targetScale = 1.07f;
+                targetX = 16f * density;
+                targetY = -8f * density;
+                break;
+            case 3:
+            default: // Start slightly zoomed, drift bottom-left
+                startScale = 1.07f;
+                targetScale = 1.02f;
+                targetX = -12f * density;
+                targetY = 10f * density;
+                break;
+        }
+
+        iv.setScaleX(startScale);
+        iv.setScaleY(startScale);
+        iv.setTranslationX(0f);
+        iv.setTranslationY(0f);
+
+        iv.animate()
+                .scaleX(targetScale)
+                .scaleY(targetScale)
+                .translationX(targetX)
+                .translationY(targetY)
+                .setDuration(22_000)
+                .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+                .withEndAction(() -> {
+                    if (iv.getVisibility() == View.VISIBLE && iv.getAlpha() > 0.5f) {
+                        iv.animate()
+                                .scaleX(startScale)
+                                .scaleY(startScale)
+                                .translationX(0f)
+                                .translationY(0f)
+                                .setDuration(22_000)
+                                .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+                                .withEndAction(() -> startKenBurnsEffect(iv, direction))
+                                .start();
+                    }
+                })
+                .start();
+    }
+
+    private void stopKenBurnsEffect() {
+        if (dockWallpaperA != null) {
+            dockWallpaperA.animate().cancel();
+            dockWallpaperA.setScaleX(1.0f);
+            dockWallpaperA.setScaleY(1.0f);
+            dockWallpaperA.setTranslationX(0f);
+            dockWallpaperA.setTranslationY(0f);
+        }
+        if (dockWallpaperB != null) {
+            dockWallpaperB.animate().cancel();
+            dockWallpaperB.setScaleX(1.0f);
+            dockWallpaperB.setScaleY(1.0f);
+            dockWallpaperB.setTranslationX(0f);
+            dockWallpaperB.setTranslationY(0f);
         }
     }
 
@@ -1725,6 +1820,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void hideDockWallpaper() {
         if (currentWallpaperPkg.isEmpty()) return;
         currentWallpaperPkg = "";
+        stopKenBurnsEffect();
         if (dockWallpaperA != null) dockWallpaperA.animate().cancel();
         if (dockWallpaperB != null) dockWallpaperB.animate().cancel();
         if (wallpaperScrim != null) wallpaperScrim.animate().cancel();
