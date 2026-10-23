@@ -105,9 +105,15 @@ For each app on your dock:
    Place a high-resolution 1920×1080 JPEG in:
    - `launcher/app/src/main/res/drawable-nodpi/wallpaper_<app>.jpg`
    - and `wallpapers/<app>.jpg`
-   The launcher maps wallpapers by package name (e.g. `wallpaper_youtube.jpg`, `wallpaper_netflix.jpg`, `wallpaper_vidio.jpg`).
+   The launcher maps wallpapers by package name (e.g. `wallpaper_youtube.jpg`, `wallpaper_netflix.jpg`, `wallpaper_vidio.jpg`). When you build the APK, these wallpapers are **baked directly inside the APK**.
 
-### 3. Build & Install
+### 3. Add Screensaver Photos (Optional)
+Place your personal photos (HEIC, JPG, PNG) inside the `screensaver/` folder:
+- **Privacy & Size**: This folder is gitignored. Because personal photos are private and large (50-100MB+), they are **not** baked into the APK. Instead, they are synced directly to `/sdcard/Screensaver/` on your TV.
+- **Syncing**: `./install.sh` will automatically prompt you to sync and optimize your screensaver photos when installing, or you can run `./tools/sync-screensaver.sh` anytime.
+- **USB Alternative**: You can also copy photos to a USB drive and paste them into `/sdcard/Screensaver/` on your TV using any file manager.
+
+### 4. Build & Install
 Run the deploy script or execute via terminal:
 
 ```bash
@@ -126,7 +132,7 @@ adb shell appops set com.gathin.tvhome GET_USAGE_STATS allow
 adb shell am start -n com.gathin.tvhome/.MainActivity
 ```
 
-### 4. Verify on Screen
+### 5. Verify on Screen
 Capture a screenshot to confirm layout and wallpaper alignment:
 
 ```bash

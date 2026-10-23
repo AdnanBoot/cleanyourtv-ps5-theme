@@ -130,7 +130,20 @@ adb -s "$TARGET_DEVICE" install -r "$APK_PATH"
 echo -e "${BLUE}Granting Usage Stats permission for screen time...${NC}"
 adb -s "$TARGET_DEVICE" shell appops set com.gathin.tvhome GET_USAGE_STATS allow || true
 
-echo -e "${BLUE}Starting CleanYourTV Launcher on your TV...${NC}"
+# 6. Optional Screensaver Photos Sync
+if [ -d "$SCRIPT_DIR/screensaver" ] && [ -n "$(ls -A "$SCRIPT_DIR/screensaver" 2>/dev/null)" ]; then
+    echo -e "\n${YELLOW}Detected photos in screensaver/ folder.${NC}"
+    read -p "Sync screensaver photos to TV (/sdcard/Screensaver/)? (Y/n): " SYNC_SCREENSAVER
+    SYNC_SCREENSAVER=${SYNC_SCREENSAVER:-Y}
+    if [[ "$SYNC_SCREENSAVER" =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}Optimizing and syncing screensaver photos for TV...${NC}"
+        TV_H=$(echo "$TARGET_DEVICE" | cut -d: -f1)
+        TV_P=$(echo "$TARGET_DEVICE" | cut -d: -f2)
+        TV_HOST="$TV_H" TV_PORT="${TV_P:-5555}" python3 "$SCRIPT_DIR/tools/sync-screensaver.py" || true
+    fi
+fi
+
+echo -e "\n${BLUE}Starting CleanYourTV Launcher on your TV...${NC}"
 adb -s "$TARGET_DEVICE" shell am start -n com.gathin.tvhome/.MainActivity
 
 echo -e "\n${GREEN}${BOLD}=========================================================="
