@@ -85,8 +85,86 @@ fi
 
 echo -e "${GREEN}✓ Connected to TV: $TARGET_DEVICE${NC}\n"
 
-# 3. Choose APK: Pre-built or Build from source
+# 3. Interactive Dock Apps Setup (Multi-Selection)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo -e "${CYAN}${BOLD}----------------------------------------------------------"
+echo "   📺 Setup Bottom Dock Apps (Multi-Selection)"
+echo -e "----------------------------------------------------------${NC}"
+echo "Default curated apps:"
+echo -e "  ${BOLD}[1]${NC} YouTube       (com.google.android.youtube.tv)"
+echo -e "  ${BOLD}[2]${NC} Apple TV      (com.apple.atve.androidtv.appletv)"
+echo -e "  ${BOLD}[3]${NC} Netflix       (com.netflix.ninja)"
+echo -e "  ${BOLD}[4]${NC} HBO Max       (com.wbd.stream)"
+echo -e "  ${BOLD}[5]${NC} Prime Video   (com.amazon.amazonvideo.livingroom)"
+echo -e "  ${BOLD}[6]${NC} Disney+       (com.disney.disneyplus)"
+echo -e "  ${BOLD}[7]${NC} Vidio         (com.vidio.android.tv)"
+echo ""
+echo "Select which apps you want on the dock (e.g. 1 3 4 5 7 or 1,2,5)"
+read -p "Enter choices [Press ENTER for all 7 apps]: " DOCK_CHOICE
+DOCK_CHOICE=${DOCK_CHOICE:-"1 2 3 4 5 6 7"}
+
+python3 - "$SCRIPT_DIR" "$DOCK_CHOICE" << 'EOF'
+import sys, os, re, json
+
+script_dir = sys.argv[1]
+raw_choices = sys.argv[2]
+
+all_apps = [
+    ("YouTube", "com.google.android.youtube.tv"),
+    ("Apple TV", "com.apple.atve.androidtv.appletv"),
+    ("Netflix", "com.netflix.ninja"),
+    ("HBO Max", "com.wbd.stream"),
+    ("Prime Video", "com.amazon.amazonvideo.livingroom"),
+    ("Disney+", "com.disney.disneyplus"),
+    ("Vidio", "com.vidio.android.tv")
+]
+
+tokens = re.split(r'[\s,]+', raw_choices.strip())
+selected_indices = []
+for t in tokens:
+    if t.isdigit():
+        idx = int(t) - 1
+        if 0 <= idx < len(all_apps) and idx not in selected_indices:
+            selected_indices.append(idx)
+
+if not selected_indices:
+    selected_indices = list(range(len(all_apps)))
+
+selected_apps = [all_apps[i] for i in selected_indices]
+cols = len(selected_apps)
+
+print(f"\n\033[0;32m✓ Configured {cols} dock apps (columns = {cols}):\033[0m")
+for i, (name, pkg) in enumerate(selected_apps, 1):
+    print(f"  {i}. {name}")
+
+# Update config.xml
+config_xml_path = os.path.join(script_dir, "launcher/app/src/main/res/values/config.xml")
+if os.path.exists(config_xml_path):
+    with open(config_xml_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    items_xml = "\n".join([f"        <item>{pkg}</item>" for _, pkg in selected_apps])
+    new_dock_block = f"<string-array name=\"dock_apps\">\n{items_xml}\n    </string-array>"
+    content = re.sub(r'<string-array name=\"dock_apps\">.*?</string-array>', new_dock_block, content, flags=re.DOTALL)
+    content = re.sub(r'<integer name=\"columns\">\d+</integer>', f'<integer name=\"columns\">{cols}</integer>', content)
+
+    with open(config_xml_path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+# Write cyt_dock_config.json for instant TV push
+tmp_json_path = os.path.join(script_dir, "launcher/app/build/cyt_dock_config.json")
+os.makedirs(os.path.dirname(tmp_json_path), exist_ok=True)
+config_json_data = {
+    "dock_apps": [pkg for _, pkg in selected_apps],
+    "columns": cols
+}
+with open(tmp_json_path, "w", encoding="utf-8") as f:
+    json.dump(config_json_data, f, indent=2)
+EOF
+
+echo ""
+
+# 4. Choose APK: Pre-built or Build from source
 PREBUILT_APK="$SCRIPT_DIR/launcher/app/build/outputs/apk/debug/app-deblouting-ps5.apk"
 if [ ! -f "$PREBUILT_APK" ] && [ -f "$SCRIPT_DIR/launcher/app/build/outputs/apk/release/app-deblouting-ps5.apk" ]; then
     PREBUILT_APK="$SCRIPT_DIR/launcher/app/build/outputs/apk/release/app-deblouting-ps5.apk"
@@ -96,7 +174,7 @@ APK_PATH=""
 if [ -f "$PREBUILT_APK" ]; then
     echo -e "${BOLD}How would you like to install?${NC}"
     echo "1) Fast Install: Use existing pre-built APK ($(du -h "$PREBUILT_APK" | cut -f1)) [Default]"
-    echo "2) Build from Source: Recompile launcher with Gradle"
+    echo "2) Build from Source: Recompile launcher with Gradle (bakes new dock into APK)"
     read -p "Enter choice [1 or 2]: " BUILD_CHOICE
     BUILD_CHOICE=${BUILD_CHOICE:-1}
 
@@ -117,7 +195,7 @@ else
     APK_PATH="$PREBUILT_APK"
 fi
 
-# 4. Install onto TV
+# 5. Install onto TV
 if [ ! -f "$APK_PATH" ]; then
     echo -e "${RED}[ERROR] APK file not found at $APK_PATH${NC}"
     exit 1
@@ -125,6 +203,13 @@ fi
 
 echo -e "\n${BLUE}Installing CleanYourTV onto $TARGET_DEVICE...${NC}"
 adb -s "$TARGET_DEVICE" install -r "$APK_PATH"
+
+# Apply dock configuration to TV
+CONFIG_JSON_PATH="$SCRIPT_DIR/launcher/app/build/cyt_dock_config.json"
+if [ -f "$CONFIG_JSON_PATH" ]; then
+    adb -s "$TARGET_DEVICE" push "$CONFIG_JSON_PATH" /data/local/tmp/config.json >/dev/null 2>&1 || true
+    adb -s "$TARGET_DEVICE" shell "mkdir -p /sdcard/Android/data/com.gathin.tvhome/files 2>/dev/null; cp /data/local/tmp/config.json /sdcard/Android/data/com.gathin.tvhome/files/config.json 2>/dev/null || content write --uri content://com.gathin.tvhome.theme/config.json < /data/local/tmp/config.json; rm -f /data/local/tmp/config.json" >/dev/null 2>&1 || true
+fi
 
 # 5. Grant Permissions & Launch
 echo -e "${BLUE}Granting Usage Stats permission for screen time...${NC}"

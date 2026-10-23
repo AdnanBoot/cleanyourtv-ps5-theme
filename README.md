@@ -65,9 +65,10 @@ If you want custom show wallpapers for your dock apps:
 ```
 The wizard will interactively guide you:
 1. Detects your Android TV or prompts: `Enter your TV IP address (e.g. 192.168.1.150): `
-2. Asks whether to use the pre-compiled `app-deblouting-ps5.apk` or recompile from source.
-3. Automatically prompts: `Sync screensaver photos to TV (/sdcard/Screensaver/)? (Y/n)` if photos are detected in `screensaver/`. If you leave it empty or don't add photos, CleanYourTV seamlessly falls back to its default screensaver (drifting clock & ambient color-shifting glow).
-4. Grants usage stats permissions and starts CleanYourTV immediately on your screen!
+2. **Interactive Dock Apps Setup**: Choose which apps you want on the dock from the curated list of 7 (e.g. type `1 3 4 5 7` to select 5 apps, or press Enter for all 7). The launcher automatically adjusts the columns and layout to match your selection!
+3. Asks whether to use the pre-compiled `app-deblouting-ps5.apk` or recompile from source.
+4. Automatically prompts: `Sync screensaver photos to TV (/sdcard/Screensaver/)? (Y/n)` if photos are detected in `screensaver/`. If you leave it empty or don't add photos, CleanYourTV seamlessly falls back to its default screensaver (drifting clock & ambient color-shifting glow).
+5. Grants usage stats permissions and starts CleanYourTV immediately on your screen!
 
 #### Step 6: Rollback (if ever needed)
 To return to your factory stock launcher at any time:
