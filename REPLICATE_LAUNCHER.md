@@ -1,10 +1,50 @@
 # Replicate This Apple TV 4K Style Launcher
 
-This guide allows anyone who clones this repository to replicate this Apple TV 4K style TV launcher with custom dock apps, show wallpapers, and stats in **one single prompt** using an AI assistant (Claude Code, Antigravity, Cursor, Codex, Gemini CLI), or manually via Gradle and ADB.
+This guide allows anyone who clones this repository to replicate and install this Apple TV 4K style TV launcher with custom dock apps, cinematic wallpapers, Ken Burns animation, and stats.
+
+You can install it in multiple ways:
+1. **Interactive Terminal Prompt (`./install.sh`)** – Zero AI required, guided CLI wizard in your terminal.
+2. **Single Command Prompt / APK Sideload** – 1-line ADB command or USB flash drive install.
+3. **Single AI Prompt** – Using an AI assistant (Claude Code, Antigravity, Cursor, ChatGPT) to customize apps and wallpapers automatically.
 
 ---
 
-## ⚡ Option 1: Replicate with a Single AI Prompt (Recommended)
+## ⚡ Option 1: Interactive Terminal Prompt (Zero AI Required)
+
+You don't need any AI to install and run this launcher. Just open your Terminal (macOS/Linux) or Command Prompt / Git Bash (Windows) in the repository folder and run:
+
+```bash
+./install.sh
+```
+
+The script will interactively guide you:
+1. Finds ADB automatically.
+2. Detects or asks for your TV's IP address (e.g. `192.168.1.150`).
+3. Installs the pre-built APK (or gives you the option to recompile from source).
+4. Automatically grants `GET_USAGE_STATS` permission for screen time.
+5. Launches CleanYourTV immediately on your screen!
+
+---
+
+## 📦 Option 2: Pre-built APK (Single Command Prompt or USB)
+
+If you already have the APK or want to install with a single command prompt:
+
+### Via ADB:
+```bash
+adb connect <YOUR_TV_IP>:5555
+adb install -r launcher/app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n com.gathin.tvhome/.MainActivity
+```
+
+### Via USB / TV File Manager (Zero PC Required):
+1. Copy `launcher/app/build/outputs/apk/debug/app-debug.apk` to a USB flash drive.
+2. Plug the USB drive into your TV.
+3. Open any TV file manager (like **X-plore** or **FX File Explorer**) or use the **Downloader** app to open and install the APK.
+
+---
+
+## 🤖 Option 3: Replicate with a Single AI Prompt (For Custom Dock Apps)
 
 Copy and paste the prompt below into your AI coding assistant (on a computer connected to the same Wi-Fi as your TV):
 
@@ -35,7 +75,7 @@ Once I provide my list of apps:
 
 ---
 
-## 🛠 Option 2: Step-by-Step Manual Replication
+## 🛠 Option 4: Step-by-Step Manual Replication
 
 If you prefer customizing the launcher manually, follow these steps:
 
