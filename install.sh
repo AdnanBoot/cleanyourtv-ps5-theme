@@ -21,7 +21,7 @@ NC='\033[0m' # No Color
 
 echo -e "${CYAN}${BOLD}"
 echo "=========================================================="
-echo "   📺 CleanYourTV - Apple TV 4K Style Launcher Installer"
+echo "   📺 CleanYourTV - PS5 Launcher custom by Ilham Asyari"
 echo "=========================================================="
 echo -e "${NC}"
 
