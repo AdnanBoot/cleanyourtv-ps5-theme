@@ -52,7 +52,66 @@ Suggested: Claude Code on [0G Private Computer](https://pc.0g.ai), one API key f
 | **3. Follow along** | Accept "Allow USB debugging?" on the TV, then answer the checklist: which apps you use, which four go in the dock, whether to keep the voice assistant, Chromecast and updates. |
 
 > [!TIP]
-> **Replicate Custom Launcher**: To replicate this custom Apple TV 4K style launcher with your own custom dock apps, show wallpapers, and stats card using a single copy-paste prompt, check out **[REPLICATE_LAUNCHER.md](REPLICATE_LAUNCHER.md)**.
+> **Apple TV 4K Launcher & Single-Prompt Customization**: To replicate this custom Apple TV 4K style launcher with custom dock apps, show wallpapers, Ken Burns effect, and stats using a single prompt or interactive wizard, check out **[REPLICATE_LAUNCHER.md](REPLICATE_LAUNCHER.md)**.
+
+## 🎬 Apple TV 4K Customization & Tutorials
+
+This edition customizes CleanYourTV with an Apple TV 4K style bottom dock, hardware-accelerated Ken Burns show wallpapers, an ambient photo screensaver, and an interactive installer.
+
+### 1. 🖼️ How to Add Custom Wallpapers
+Each dock app displays a full-bleed 1080p cinematic backdrop that cross-fades and slowly zooms/drifts (Ken Burns effect) when focused:
+
+1. **Get your 1080p backdrops**: Choose 1920×1080 JPEG images for your streaming apps (e.g. key art from Netflix, YouTube, HBO Max, etc.).
+2. **Place images in the project**:
+   - Put the files into `launcher/app/src/main/res/drawable-nodpi/` (e.g., `wallpaper_netflix.jpg`, `wallpaper_youtube.jpg`, `wallpaper_prime.jpg`).
+   - Also save a copy in `wallpapers/` for easy reference.
+3. **Map the package**:
+   In [`launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java`](launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java), link the package name to the drawable:
+   ```java
+   DOCK_WALLPAPERS.put("com.netflix.ninja", R.drawable.wallpaper_netflix);
+   ```
+4. **Compile into APK**:
+   When you build with `./install.sh` or `./gradlew assembleDebug`, all wallpapers are **baked directly inside `app-deblouting-ps5.apk`**. No internet connection or external storage is required on the TV to display wallpapers!
+
+---
+
+### 2. 📸 How to Add Screensaver Photos
+The screensaver displays a smooth, non-burning photo slideshow with original aspect ratio preservation (portrait photos get subtle blurred ambient borders, landscape photos fit full screen):
+
+1. **Place your photos**: Drop any personal photos (Apple `.HEIC`, `.JPG`, `.PNG`, `.WEBP`) into the `screensaver/` folder.
+   > [!NOTE]
+   > **Privacy Guarantee**: The `screensaver/` folder is strictly in `.gitignore`. Your personal photos will **never** be committed to Git or uploaded to GitHub.
+2. **Sync to TV**:
+   - **Automatic**: When running `./install.sh`, it will detect the folder and ask:
+     ```
+     Detected photos in screensaver/ folder. Sync screensaver photos to TV (/sdcard/Screensaver/)? (Y/n)
+     ```
+   - **Standalone Script**: You can also run `./tools/sync-screensaver.sh` anytime. It converts HEIC to baseline JPEG, optimizes dimensions to 1080p (reducing size by ~85% to prevent TV RAM crashes), and uploads them to `/sdcard/Screensaver/`.
+   - **USB Method (Zero PC)**: You can copy photos to a USB flash drive and paste them into `/sdcard/Screensaver/` on your TV using any TV file manager (e.g. X-plore).
+
+---
+
+### 3. 📱 Handling "Outside" Apps & Missing Default Apps
+
+#### What if a default dock app is NOT installed on the TV?
+*(e.g. HBO Max is listed in the dock, but the TV doesn't have it installed)*
+- **100% Safe & Zero Crashes**: The launcher checks Android's `PackageManager` first. Any uninstalled app is simply skipped.
+- **Auto-Fill Option**: If `<bool name="fill_dock">true</bool>` is enabled in [config.xml](launcher/app/src/main/res/values/config.xml), any empty slot is automatically filled by other installed apps so there is never an awkward gap.
+- **Play Store Detection**: If the user installs the missing app later from Google Play Store, the launcher detects it and places it on the dock automatically.
+
+#### How to access apps outside the dock?
+*(e.g. Spotify, Kodi, VLC, Plex, or games not pinned to the dock)*
+- **Option A (Add to Dock)**: Edit `dock_apps` and `columns` in [config.xml](launcher/app/src/main/res/values/config.xml). The dock supports any number of apps.
+- **Option B (App Grid Below Dock)**: Set `<integer name="rows_below_dock">1</integer>` (or 2) in [config.xml](launcher/app/src/main/res/values/config.xml). Pressing **DOWN** on the remote scrolls into a grid of all your other apps.
+- **Option C (Top "App" Tab)**: Set `topTabs` visibility to `visible` in [activity_main.xml](launcher/app/src/main/res/layout/activity_main.xml) to get an Apple TV-style top tab bar with a dedicated full-screen App Library.
+- **Option D (Top Settings Icon)**: Click the **Settings ⚙️** icon on the top bar -> **Apps** -> **See all apps** to launch any installed app.
+
+---
+
+### 4. ⚡ 1-Click Install & Safe Rollback
+
+- **Install**: Run `./install.sh` in your terminal. It guides you through connecting to your TV IP, installs `app-deblouting-ps5.apk`, and sets up permissions.
+- **Rollback**: Run `./uninstall.sh` to safely restore your factory stock launcher (Google TV / Android TV) in 15 seconds. Or simply uninstall CleanYourTV from TV **Settings ⚙️** -> **Apps** -> **CleanYourTV** -> **Uninstall**.
 
 The assistant backs up, debloats, builds and installs the launcher, and checks each step with
 screenshots pulled from the TV. With this repo as context it takes about fifteen minutes.

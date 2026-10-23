@@ -174,6 +174,23 @@ Rolling back is completely safe and takes less than 30 seconds.
 
 ---
 
+## 📱 Handling "Outside" Apps & Missing Default Apps
+
+### What if a default dock app is NOT installed on the TV?
+*(e.g. HBO Max is listed in the dock, but the TV doesn't have it installed)*
+- **100% Safe & Zero Crashes**: The launcher queries Android's `PackageManager` first. Any uninstalled app is simply skipped.
+- **Auto-Fill Option**: If `<bool name="fill_dock">true</bool>` is enabled in `config.xml`, any empty slot is automatically filled by other installed apps so there is never an awkward gap.
+- **Play Store Detection**: If the user installs the missing app later from Google Play Store, the launcher detects it and places it on the dock automatically.
+
+### How to access apps outside the dock?
+*(e.g. Spotify, Kodi, VLC, Plex, or games not pinned to the dock)*
+- **Option A (Add to Dock)**: Edit `dock_apps` and `columns` in `config.xml`. The dock supports any number of apps.
+- **Option B (App Grid Below Dock)**: Set `<integer name="rows_below_dock">1</integer>` (or 2) in `config.xml`. Pressing **DOWN** on the remote scrolls into a grid of all your other apps.
+- **Option C (Top "App" Tab)**: Set `topTabs` visibility to `visible` in `activity_main.xml` to get an Apple TV-style top tab bar with a dedicated full-screen App Library.
+- **Option D (Top Settings Icon)**: Click the **Settings ⚙️** icon on the top bar -> **Apps** -> **See all apps** to launch any installed app.
+
+---
+
 ## 🌟 Key Features in this Replicated Launcher
 
 - **Apple TV 4K Style Glass Dock**: Sleek translucent glass highlight that snaps instantly between apps without lag or frame drops.
