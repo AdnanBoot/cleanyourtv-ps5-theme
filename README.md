@@ -25,7 +25,7 @@ Choose whichever method fits your setup:
 
 ```mermaid
 flowchart TD
-    Start["Clone Repository & cd ps5-theme"] --> Choose{"Choose Install Method"}
+    Start["Clone Repository & cd cleanyourtv-ps5-theme"] --> Choose{"Choose Install Method"}
     Choose -->|"Option 1"| M1["Method 1: ./install.sh\n(Interactive Terminal Wizard - Zero AI)"]
     Choose -->|"Option 2"| M2["Method 2: Pre-built APK\n(1-Line ADB or USB Drive)"]
     Choose -->|"Option 3"| M3["Method 3: AI Prompt\n(Claude Code / Cursor / ChatGPT)"]
@@ -42,12 +42,12 @@ flowchart TD
 #### Step 1: Clone the repository
 Open your Terminal (macOS/Linux) or Git Bash / Command Prompt (Windows):
 ```bash
-git clone https://github.com/ilhamasy/ps5-theme.git
+git clone https://github.com/ilhamasy/cleanyourtv-ps5-theme.git
 ```
 
 #### Step 2: Navigate to the project directory
 ```bash
-cd ps5-theme
+cd cleanyourtv-ps5-theme
 ```
 
 #### Step 3 (Optional): Add your custom wallpapers
@@ -83,8 +83,8 @@ To return to your factory stock launcher at any time:
 #### Option A: Via ADB Command Prompt (1-Liner)
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/ilhamasy/ps5-theme.git
-   cd ps5-theme
+   git clone https://github.com/ilhamasy/cleanyourtv-ps5-theme.git
+   cd cleanyourtv-ps5-theme
    ```
 2. **Connect to your TV**:
    ```bash
@@ -120,8 +120,8 @@ To return to your factory stock launcher at any time:
 
 #### Step 1: Clone the repository & enter directory
 ```bash
-git clone https://github.com/ilhamasy/ps5-theme.git
-cd ps5-theme
+git clone https://github.com/ilhamasy/cleanyourtv-ps5-theme.git
+cd cleanyourtv-ps5-theme
 ```
 
 #### Step 2: (Optional) Add your assets
@@ -129,7 +129,7 @@ cd ps5-theme
 - Drop any personal family photos into `screensaver/`.
 
 #### Step 3: Launch your AI assistant in this directory
-Open Claude Code, Antigravity, or Cursor terminal in the `ps5-theme` directory.
+Open Claude Code, Antigravity, or Cursor terminal in the `cleanyourtv-ps5-theme` directory.
 
 #### Step 4: Copy and paste this single prompt:
 ```markdown
