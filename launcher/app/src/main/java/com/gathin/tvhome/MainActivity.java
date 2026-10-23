@@ -1699,6 +1699,19 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         currentWallpaperPkg = pkg;
         Integer resId = DOCK_WALLPAPERS.get(pkg);
         if (resId == null) {
+            // Dynamic fallback: match by package segments (e.g. wallpaper_spotify, wallpaper_disney)
+            String[] segments = pkg.split("\\.");
+            for (int s = segments.length - 1; s >= 0; s--) {
+                String seg = segments[s].toLowerCase();
+                int id = getResources().getIdentifier("wallpaper_" + seg, "drawable", getPackageName());
+                if (id != 0) {
+                    resId = id;
+                    DOCK_WALLPAPERS.put(pkg, resId);
+                    break;
+                }
+            }
+        }
+        if (resId == null) {
             hideDockWallpaper();
             return;
         }

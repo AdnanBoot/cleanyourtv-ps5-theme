@@ -165,17 +165,52 @@ Simply prompt the AI:
 ### 1. 🖼️ How to Add & Change Custom Wallpapers
 Each dock app displays a full-bleed 1080p cinematic backdrop that cross-fades and slowly zooms/drifts (Ken Burns effect) when focused:
 
-1. **Prepare 1080p backdrops**: Choose 1920×1080 JPEG images for your streaming apps (e.g. key art from Netflix, YouTube, HBO Max, etc.).
-2. **Place images in the project**:
-   - Save the image to: `launcher/app/src/main/res/drawable-nodpi/wallpaper_<app>.jpg`
-   - Also keep a copy in: `wallpapers/<app>.jpg`
-3. **Map the package**:
-   In [`launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java`](launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java), link the app package name to your drawable:
-   ```java
-   DOCK_WALLPAPERS.put("com.netflix.ninja", R.drawable.wallpaper_netflix);
-   ```
-4. **Compile into APK**:
-   When you build with `./install.sh` or `./gradlew assembleDebug`, all wallpapers are **baked directly inside `app-deblouting-ps5.apk`**. No internet connection or external storage is required on the TV to display wallpapers!
+#### Step 1: Prepare 1080p Backdrops
+- Choose 1920×1080 JPEG images for your streaming apps (e.g. key art from Netflix, YouTube, Prime Video, etc.).
+
+#### Step 2: Naming Rules on Disk (Android Resource Rules)
+Place the image in `launcher/app/src/main/res/drawable-nodpi/wallpaper_<name>.jpg`:
+- ⚠️ **Must be strictly lowercase**: Use only `a-z`, `0-9`, and underscore `_`.
+- ❌ **NO dashes (`-`)**: e.g., `wallpaper-prime.jpg` is **invalid** in Android.
+- ❌ **NO capital letters**: e.g., `PrimeVideo.jpg` is **invalid** in Android.
+- ✅ **Valid Examples**:
+  - `wallpaper_prime.jpg`
+  - `wallpaper_netflix.jpg`
+  - `wallpaper_spotify.jpg`
+
+*(Also keep a copy in `wallpapers/<name>.jpg` for quick reference).*
+
+#### Step 3: Java Mapping Syntax in `MainActivity.java`
+In [`launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java`](launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java), find the `DOCK_WALLPAPERS` block around line 270:
+
+```java
+DOCK_WALLPAPERS.put("<package_name>", R.drawable.<filename_without_extension>);
+```
+
+##### ⚠️ Important Syntax Rules:
+1. **NO file extension**: Never write `.jpg` or `.png` in Java code! Android compiles files into integer IDs.
+   - ✅ Correct: `R.drawable.wallpaper_prime`
+   - ❌ Incorrect: `R.drawable.wallpaper_prime.jpg` *(Causes build error)*
+2. **Capital `R`**: Must be uppercase `R.drawable`, never lowercase `r.drawable`.
+3. **Exact Package Name**: Must match the TV app package name.
+
+##### 📋 Real Code Examples:
+```java
+// Prime Video:
+DOCK_WALLPAPERS.put("com.amazon.amazonvideo.livingroom", R.drawable.wallpaper_prime);
+
+// Netflix:
+DOCK_WALLPAPERS.put("com.netflix.ninja", R.drawable.wallpaper_netflix);
+
+// Spotify:
+DOCK_WALLPAPERS.put("com.spotify.tv.android", R.drawable.wallpaper_spotify);
+```
+
+> [!TIP]
+> **Automatic Dynamic Detection**: The launcher also has an automated dynamic fallback: If you name your file `wallpaper_<appname>.jpg` (e.g., `wallpaper_spotify.jpg` for `com.spotify.tv.android`), the launcher will automatically detect and link it even if you didn't manually edit `MainActivity.java`!
+
+#### Step 4: Compile into APK
+When you build with `./install.sh` or `./gradlew assembleDebug`, all wallpapers are **baked directly inside `app-deblouting-ps5.apk`**. No internet connection or external storage is required on the TV to display wallpapers!
 
 ---
 

@@ -103,9 +103,16 @@ For each app on your dock:
    Place a transparent or dark square logo (50×50dp) in `launcher/app/src/main/assets/icons/<app>-small-icons.png`. The launcher automatically rounds corners by 14dp.
 2. **Focused Show Wallpaper**:
    Place a high-resolution 1920×1080 JPEG in:
-   - `launcher/app/src/main/res/drawable-nodpi/wallpaper_<app>.jpg`
-   - and `wallpapers/<app>.jpg`
-   The launcher maps wallpapers by package name (e.g. `wallpaper_youtube.jpg`, `wallpaper_netflix.jpg`, `wallpaper_vidio.jpg`). When you build the APK, these wallpapers are **baked directly inside the APK**.
+   - `launcher/app/src/main/res/drawable-nodpi/wallpaper_<name>.jpg`
+   - and `wallpapers/<name>.jpg`
+   *(⚠️ Filename must be strictly lowercase letters, numbers, and underscores only. No dashes, no spaces, e.g. `wallpaper_prime.jpg`).*
+
+3. **Map in `MainActivity.java`**:
+   Link the package to the drawable ID (notice: **NO `.jpg` extension**, uppercase `R`):
+   ```java
+   DOCK_WALLPAPERS.put("com.amazon.amazonvideo.livingroom", R.drawable.wallpaper_prime);
+   ```
+   *(Or rely on the launcher's automatic dynamic fallback for files matching `wallpaper_<name>.jpg`).* When you build the APK, these wallpapers are **baked directly inside the APK**.
 
 ### 3. Add Screensaver Photos (Optional)
 Place your personal photos (HEIC, JPG, PNG) inside the `screensaver/` folder:
