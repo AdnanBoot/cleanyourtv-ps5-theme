@@ -106,7 +106,7 @@ phoning home, no apps you never asked for.
 | | |
 |---|---|
 | ![hbomax](docs/capture_hbomax.png) | ![netflix](docs/capture_netflix.png) |
-| ![hbomax](docs/capture_disney.png) | ![netflix](docs/capture_prime) |
+| ![hbomax](docs/capture_disney.png) | ![netflix](docs/capture_prime.png) |
 
 ## Supported TVs
 
