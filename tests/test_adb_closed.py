@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """tools/adb-closed.py tells an open port from a closed one, on 127.0.0.1.
 
 Run from the repository root: python3 -m unittest discover -s tests -v

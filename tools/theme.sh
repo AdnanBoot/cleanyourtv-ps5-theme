@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 # Push a theme (a folder with config.json and optionally wallpaper.jpg) to the launcher on the TV and
 # restart Home so it picks it up. The launcher reads the files from its external files directory and
 # overlays config.json on its built-in config.xml; see themes/README.md for the keys.

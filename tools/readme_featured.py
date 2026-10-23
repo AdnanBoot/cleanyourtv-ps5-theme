@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Renders the Featured in panel (docs/featured.png), the middle part of the README card.
 
 Update LOGOS / MORE, then: python3 tools/readme_featured.py Fredoka.ttf docs/featured.png

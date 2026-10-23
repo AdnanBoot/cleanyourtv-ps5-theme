@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 # Pushes small icons from local icons/ folder to /sdcard/Icons/ on the TV.
 set -e
 

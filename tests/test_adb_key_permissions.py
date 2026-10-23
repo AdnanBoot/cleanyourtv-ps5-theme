@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """tools/tv.py keeps its ADB private key readable only by the account that made it.
 
 The key is a credential: a TV that has accepted it gives a shell to anyone holding it, with no

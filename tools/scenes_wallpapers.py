@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Draws the wallpapers of themes/scenes: 14 dark illustrated landscapes, as SVG (1280x720) from code, so the
 collection is this repo's own work and can be changed or extended here.
 

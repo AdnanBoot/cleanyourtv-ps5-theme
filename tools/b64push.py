@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Fallback file transfer: send a file to the TV as base64 chunks through plain shell commands.
 
 Usage: b64push.py <local file> <remote path>

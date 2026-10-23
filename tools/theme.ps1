@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 # Windows version of theme.sh: push a theme folder (config.json and optionally wallpaper.jpg) to the
 # launcher on the TV and restart Home. See themes/README.md for the keys.
 #

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Stacks the README stat strip, the Featured in panel and the before/after TVs into one card (docs/card.png).
 
 Run tools/readme_stats.py and tools/readme_featured.py first, then:

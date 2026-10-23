@@ -1,6 +1,9 @@
 #!/bin/bash
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 TV_IP="192.168.1.237:5555"
-APK="launcher/app/build/outputs/apk/debug/app-debug.apk"
+APK="launcher/app/build/outputs/apk/debug/app-deblouting-ps5.apk"
 
 echo "Connecting to TV at $TV_IP..."
 adb connect $TV_IP

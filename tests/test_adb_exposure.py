@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """tools/disable.sh says so when the TV's network ADB accepts any device (ro.adb.secure=0).
 
 Run from the repository root: python3 -m unittest discover -s tests -v

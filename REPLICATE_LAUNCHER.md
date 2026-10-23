@@ -33,12 +33,12 @@ If you already have the APK or want to install with a single command prompt:
 ### Via ADB:
 ```bash
 adb connect <YOUR_TV_IP>:5555
-adb install -r launcher/app/build/outputs/apk/debug/app-debug.apk
+adb install -r launcher/app/build/outputs/apk/debug/app-deblouting-ps5.apk
 adb shell am start -n com.gathin.tvhome/.MainActivity
 ```
 
 ### Via USB / TV File Manager (Zero PC Required):
-1. Copy `launcher/app/build/outputs/apk/debug/app-debug.apk` to a USB flash drive.
+1. Copy `launcher/app/build/outputs/apk/debug/app-deblouting-ps5.apk` to a USB flash drive.
 2. Plug the USB drive into your TV.
 3. Open any TV file manager (like **X-plore** or **FX File Explorer**) or use the **Downloader** app to open and install the APK.
 
@@ -117,7 +117,7 @@ adb connect 192.168.1.xxx:5555
 # 2. Build and install the APK
 cd launcher
 ./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/debug/app-deblouting-ps5.apk
 
 # 3. Grant Usage Stats permission for screen time
 adb shell appops set com.gathin.tvhome GET_USAGE_STATS allow

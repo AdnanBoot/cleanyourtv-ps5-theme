@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Forward a port on this computer to the TV's ADB port, for assistants whose sandbox can't reach the network.
 
 Some coding assistants run their commands in a sandbox that may talk to this computer but not to other devices

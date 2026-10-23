@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 # Windows version of disable.sh: disable every package listed in a debloat file on the TV
 # (one package per line, # comments allowed). Packages are disabled for user 0, never uninstalled.
 # Undo with tools\restore.ps1 <same file>.

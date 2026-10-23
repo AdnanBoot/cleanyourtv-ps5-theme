@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 # Disable every package listed in a debloat file on the TV (one package per line, # comments allowed).
 # Packages are disabled for user 0, never uninstalled. Undo with tools/restore.sh <same file>.
 #

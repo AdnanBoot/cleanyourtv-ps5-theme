@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """A Samsung Tizen set is documented as out of reach for this repo's tools, not as a supported TV.
 
 #441 offered one owner's reconnaissance of an AU8000, and the answer to "can this repo clean my

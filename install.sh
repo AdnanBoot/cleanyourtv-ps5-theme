@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 # ==============================================================================
 # CleanYourTV - Interactive Installer & Setup Wizard
 # Works on macOS, Linux, and Windows (Git Bash / WSL)
@@ -84,7 +87,10 @@ echo -e "${GREEN}✓ Connected to TV: $TARGET_DEVICE${NC}\n"
 
 # 3. Choose APK: Pre-built or Build from source
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PREBUILT_APK="$SCRIPT_DIR/launcher/app/build/outputs/apk/debug/app-debug.apk"
+PREBUILT_APK="$SCRIPT_DIR/launcher/app/build/outputs/apk/debug/app-deblouting-ps5.apk"
+if [ ! -f "$PREBUILT_APK" ] && [ -f "$SCRIPT_DIR/launcher/app/build/outputs/apk/release/app-deblouting-ps5.apk" ]; then
+    PREBUILT_APK="$SCRIPT_DIR/launcher/app/build/outputs/apk/release/app-deblouting-ps5.apk"
+fi
 
 APK_PATH=""
 if [ -f "$PREBUILT_APK" ]; then

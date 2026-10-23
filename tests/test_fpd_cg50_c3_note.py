@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """The FPD CG50-C3 note: a one-day list stays a note, and its remote lesson lands in the docs.
 
 #475 supplied a working list plus two facts the repo was missing: a setupwraith check that has to be

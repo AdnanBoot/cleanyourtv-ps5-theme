@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """tools/disable.sh must keep the packages that drive the HDMI/AV/tuner inputs (#321).
 
 On a OnePlus TV (Android 11, MediaTek/MStar) disabling them left every HDMI port detecting the cable

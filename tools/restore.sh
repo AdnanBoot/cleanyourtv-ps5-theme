@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 # Put the TV back the way it was before tools/disable.sh, using the state recorded at that time:
 # packages that were already disabled stay disabled, Home goes back to the component that owned it,
 # and the animation scales go back to their recorded values. Pass the same list you ran disable with.

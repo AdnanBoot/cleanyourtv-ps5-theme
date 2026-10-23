@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """tools/disable.sh and tools/disable.ps1 must not disable the app that owns Home (#239).
 
 A list from `examples/` (the Xiaomi one, for instance) includes the stock launcher, and running it

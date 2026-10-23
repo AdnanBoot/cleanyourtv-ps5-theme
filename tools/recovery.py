@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """The state a debloat list is about to change, so that undo means undo (#239).
 
     recovery.py --save <debloat list>                read the TV and write the record

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 # Windows version of build-and-install.sh: build the launcher APK and install it on the TV as the
 # default home screen. Uses Android Studio's bundled JDK and the default SDK location unless
 # JAVA_HOME / ANDROID_HOME are set.
@@ -57,7 +60,7 @@ if (-not $StockLauncher) {
 Write-Host "Stock launcher: $StockLauncher"
 $disableStock = if ($StockLauncher -eq 'none') { 'echo stock launcher left alone' } else { "pm disable-user --user 0 $StockLauncher" }
 
-$apk = 'app\build\outputs\apk\release\app-release.apk'
+$apk = if (Test-Path 'app\build\outputs\apk\release\app-deblouting-ps5.apk') { 'app\build\outputs\apk\release\app-deblouting-ps5.apk' } elseif (Test-Path 'app\build\outputs\apk\debug\app-deblouting-ps5.apk') { 'app\build\outputs\apk\debug\app-deblouting-ps5.apk' } else { 'app\build\outputs\apk\release\app-release.apk' }
 & $py -I ..\tools\b64push.py $apk /data/local/tmp/tvhome.apk
 if ($LASTEXITCODE -ne 0) { throw 'APK upload failed' }
 $out = & $py -I ..\tools\tv.py 'pm install -r /data/local/tmp/tvhome.apk; rm -f /data/local/tmp/tvhome.apk'

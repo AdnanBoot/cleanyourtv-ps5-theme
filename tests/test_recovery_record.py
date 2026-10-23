@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Run tools/recovery.py and the shell that calls it against a simulated TV (#239).
 
 The property worth testing is the one no TV reproduces on demand: what undo does to a package the

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """The setupwraith notes must carry the second box that reproduces them (#500).
 
 docs/TROUBLESHOOTING.md already documented the casting break and the `.RecoveryActivity` crash loop

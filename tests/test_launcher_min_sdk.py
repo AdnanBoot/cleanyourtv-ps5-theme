@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """The install script asks the TV's SDK level before it builds, and the docs answer #576.
 
 A set older than the launcher's minSdk used to cost a gradle build, a push and a `pm install` that

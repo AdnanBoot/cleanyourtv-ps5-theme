@@ -38,6 +38,23 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "app-deblouting-ps5.apk"
+        }
+        if (variant.buildType.name == 'release') {
+            variant.assembleProvider.configure {
+                doLast {
+                    copy {
+                        from "${layout.buildDirectory.get()}/outputs/apk/release/app-deblouting-ps5.apk"
+                        into "${layout.buildDirectory.get()}/outputs/apk/release"
+                        rename { "app-release.apk" }
+                    }
+                }
+            }
+        }
+    }
 }
 
 dependencies {

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Guard the Hebrew resource copy against new strings and required Home views."""
 from pathlib import Path
 import re

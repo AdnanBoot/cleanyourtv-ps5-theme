@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """What a firmware update undid, compared with the list that was applied (#359).
 
     check.py <debloat list> [launcher package]        report the drift; exit 1 when there is any

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Where the #577 field report went: the Fire OS limits bullet and the TVision Hub note.
 
 The report covers six devices in one session, and most of it was already documented (the onn 4K Pro

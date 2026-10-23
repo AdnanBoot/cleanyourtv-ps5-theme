@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Pins the QM7 (75QM751G) device note and the casting bullet it exists for.
 
 The note is one owner's same-day report (#453), not a list: it has to keep sending people to the

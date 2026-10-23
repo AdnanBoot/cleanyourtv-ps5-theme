@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Put this season's F1 calendar into a theme, for the launcher's race-weekend mode.
 
     race_calendar.py <theme folder>              fetch the current season and write race_calendar into

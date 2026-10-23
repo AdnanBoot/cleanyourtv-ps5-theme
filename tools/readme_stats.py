@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Renders the stat strip (docs/stats.png), the top part of the README card.
 
 Update STATS, then: python3 tools/readme_stats.py Fredoka.ttf docs/stats.png

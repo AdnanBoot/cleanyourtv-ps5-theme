@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """The Sony K-85XR70 (#590) density note, and the diagnostic it feeds into TROUBLESHOOTING.
 
 Documentation only, so the tests pin the numbers a reader has to be able to trust (the three boots,

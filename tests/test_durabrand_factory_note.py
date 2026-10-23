@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """The Durabrand (#470) device note, and the factory-menu trap it reports.
 
 The note is documentation only, so the tests pin the facts that make it useful (the packages, the

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Checks every TV list in examples/ and the two tables that index them.
 
 Run from the repository root: python3 -m unittest discover -s tests -v

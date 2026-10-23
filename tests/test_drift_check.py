@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """tools/check.py against a simulated TV (#359).
 
 The property worth testing is the one no TV shows on demand: what the drift report says after a

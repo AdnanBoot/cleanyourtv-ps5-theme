@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 # Build the launcher APK and install it on the TV as the default home screen.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -87,7 +90,9 @@ echo "Stock launcher: $STOCK_LAUNCHER"
 HOME_QUERY='cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME'
 if [ "$STOCK_LAUNCHER" = none ]; then DISABLE_STOCK="echo stock launcher left alone"
 else DISABLE_STOCK="pm disable-user --user 0 $STOCK_LAUNCHER"; fi
-APK=app/build/outputs/apk/release/app-release.apk
+APK=app/build/outputs/apk/release/app-deblouting-ps5.apk
+if [ ! -f "$APK" ]; then APK=app/build/outputs/apk/release/app-release.apk; fi
+if [ ! -f "$APK" ]; then APK=app/build/outputs/apk/debug/app-deblouting-ps5.apk; fi
 "$PY" -I ../tools/b64push.py "$APK" /data/local/tmp/tvhome.apk
 # Install on its own: in the batch below a failed install (e.g. "not enough space" on a full /data)
 # would not stop the stock launcher from being disabled.

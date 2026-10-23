@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Minimal ADB-over-TCP client for an Android TV using adb_shell (no adb binary needed).
 
 Set TV_HOST to the TV's IP. Usage:

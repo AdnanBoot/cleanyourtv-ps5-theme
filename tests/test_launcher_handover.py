@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Run launcher/build-and-install.sh against a simulated TV, without gradle or a real device.
 
 The handover is the step that can leave a TV with no working Home, so the failures worth testing are

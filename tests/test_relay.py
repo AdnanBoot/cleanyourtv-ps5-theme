@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """tools/relay.py forwards bytes both ways, listens on loopback only, and says so when the TV is out of reach.
 
 A small echo server on this machine stands in for the TV, so the test needs no TV.

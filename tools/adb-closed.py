@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """Check that the TV's network ADB port is closed, after turning debugging off (no nc needed).
 
     adb-closed.py <tv ip> [port]       port defaults to TV_PORT or 5555; the IP to TV_HOST

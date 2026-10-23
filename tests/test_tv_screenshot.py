@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Ilham
+# All Rights Reserved.
+# This from project cleanyourtv by Gathin32 custom by Ilham Asyari
 """tools/tv.py --screenshot: capture on the TV, pull the file, and say when it is empty.
 
 PROMPT.md tells the agent to look at a screenshot after every change, and CONTRIBUTING.md asks for
