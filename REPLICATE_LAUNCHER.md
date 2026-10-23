@@ -136,6 +136,38 @@ adb pull /sdcard/home_screen.png .
 
 ---
 
+## 🔄 How to Rollback / Restore Your Stock Launcher
+
+Rolling back is completely safe and takes less than 30 seconds.
+
+### If you installed via .APK or `./install.sh`:
+- **Directly from your TV (No PC required)**:
+  1. Open your TV **Settings ⚙️** -> **Apps** -> **See all apps**.
+  2. Select **CleanYourTV** (or `com.gathin.tvhome`).
+  3. Click **Uninstall**.
+  4. Press the **HOME** button on your TV remote. Your TV will automatically return to its original stock launcher (Google TV / Android TV).
+- **Via 1-Click Script**:
+  Run `./uninstall.sh` in your terminal. It will re-enable any disabled stock launcher and uninstall CleanYourTV automatically.
+- **Via ADB Command**:
+  ```bash
+  adb uninstall com.gathin.tvhome
+  ```
+
+### If you installed using the AI Prompt Method:
+- **On the TV**:
+  Simply prompt your AI assistant:
+  > *"Please uninstall CleanYourTV from my TV, re-enable the stock launcher, and restore the TV home screen."*
+  The AI will run the rollback commands automatically over ADB.
+- **On the Local Codebase**:
+  To reset the code back to default and discard custom app configurations:
+  ```bash
+  git restore .
+  # or switch back to the original branch:
+  git checkout main
+  ```
+
+---
+
 ## 🌟 Key Features in this Replicated Launcher
 
 - **Apple TV 4K Style Glass Dock**: Sleek translucent glass highlight that snaps instantly between apps without lag or frame drops.
