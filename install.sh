@@ -130,9 +130,11 @@ adb -s "$TARGET_DEVICE" install -r "$APK_PATH"
 echo -e "${BLUE}Granting Usage Stats permission for screen time...${NC}"
 adb -s "$TARGET_DEVICE" shell appops set com.gathin.tvhome GET_USAGE_STATS allow || true
 
-# 6. Optional Screensaver Photos Sync
-if [ -d "$SCRIPT_DIR/screensaver" ] && [ -n "$(ls -A "$SCRIPT_DIR/screensaver" 2>/dev/null)" ]; then
-    echo -e "\n${YELLOW}Detected photos in screensaver/ folder.${NC}"
+# 6. Screensaver Setup
+HAS_PHOTOS=$(find "$SCRIPT_DIR/screensaver" -maxdepth 1 -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.heic" -o -iname "*.webp" \) 2>/dev/null | head -n 1 || true)
+
+if [ -n "$HAS_PHOTOS" ]; then
+    echo -e "\n${YELLOW}Detected personal photos in screensaver/ folder.${NC}"
     read -p "Sync screensaver photos to TV (/sdcard/Screensaver/)? (Y/n): " SYNC_SCREENSAVER
     SYNC_SCREENSAVER=${SYNC_SCREENSAVER:-Y}
     if [[ "$SYNC_SCREENSAVER" =~ ^[Yy]$ ]]; then
@@ -141,6 +143,9 @@ if [ -d "$SCRIPT_DIR/screensaver" ] && [ -n "$(ls -A "$SCRIPT_DIR/screensaver" 2
         TV_P=$(echo "$TARGET_DEVICE" | cut -d: -f2)
         TV_HOST="$TV_H" TV_PORT="${TV_P:-5555}" python3 "$SCRIPT_DIR/tools/sync-screensaver.py" || true
     fi
+else
+    echo -e "\n${BLUE}ℹ No personal photos found in screensaver/ folder.${NC}"
+    echo -e "CleanYourTV will use its default screensaver (drifting clock over ambient glow)."
 fi
 
 echo -e "\n${BLUE}Starting CleanYourTV Launcher on your TV...${NC}"

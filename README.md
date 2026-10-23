@@ -66,7 +66,7 @@ If you want custom show wallpapers for your dock apps:
 The wizard will interactively guide you:
 1. Detects your Android TV or prompts: `Enter your TV IP address (e.g. 192.168.1.150): `
 2. Asks whether to use the pre-compiled `app-deblouting-ps5.apk` or recompile from source.
-3. Automatically prompts: `Sync screensaver photos to TV (/sdcard/Screensaver/)? (Y/n)` to optimize and upload your photos.
+3. Automatically prompts: `Sync screensaver photos to TV (/sdcard/Screensaver/)? (Y/n)` if photos are detected in `screensaver/`. If you leave it empty or don't add photos, CleanYourTV seamlessly falls back to its default screensaver (drifting clock & ambient color-shifting glow).
 4. Grants usage stats permissions and starts CleanYourTV immediately on your screen!
 
 #### Step 6: Rollback (if ever needed)
@@ -179,16 +179,19 @@ Each dock app displays a full-bleed 1080p cinematic backdrop that cross-fades an
 ---
 
 ### 2. 📸 How to Add Screensaver Photos
-The screensaver displays a smooth, non-burning photo slideshow with original aspect ratio preservation (portrait photos get subtle blurred ambient borders, landscape photos fit full screen):
+The screensaver automatically adapts depending on whether you add personal photos:
+- **With Personal Photos**: A smooth, non-burning photo slideshow with original aspect ratio preservation (portrait photos get subtle blurred ambient borders, landscape photos fit full screen).
+- **Without Photos (Default Screensaver Fallback)**: Automatically displays CleanYourTV's signature screensaver — a clean floating clock and date drifting across a pitch-black screen over a color-shifting radial ambient glow.
 
-1. **Place your photos**: Drop any personal photos (Apple `.HEIC`, `.JPG`, `.PNG`, `.WEBP`) into the `screensaver/` folder.
+1. **Place your photos (Optional)**: Drop any personal photos (Apple `.HEIC`, `.JPG`, `.PNG`, `.WEBP`) into the `screensaver/` folder.
    > [!NOTE]
-   > **Privacy Guarantee**: The `screensaver/` folder is strictly in `.gitignore`. Your personal photos will **never** be committed to Git or uploaded to GitHub.
+   > **Privacy Guarantee**: The `screensaver/` folder is tracked with a guide, but photo files inside are strictly in `.gitignore`. Your personal photos will **never** be committed to Git or uploaded to GitHub.
 2. **Sync to TV**:
-   - **Automatic**: When running `./install.sh`, it will detect the folder and ask:
+   - **Automatic**: When running `./install.sh`, it will detect any photos in `screensaver/` and ask:
      ```
-     Detected photos in screensaver/ folder. Sync screensaver photos to TV (/sdcard/Screensaver/)? (Y/n)
+     Detected personal photos in screensaver/ folder. Sync screensaver photos to TV (/sdcard/Screensaver/)? (Y/n)
      ```
+     *(If no photos are found, it skips this step and keeps CleanYourTV's default screensaver active).*
    - **Standalone Script**: You can also run `./tools/sync-screensaver.sh` anytime. It converts HEIC to baseline JPEG, optimizes dimensions to 1080p (reducing size by ~85% to prevent TV RAM crashes), and uploads them to `/sdcard/Screensaver/`.
    - **USB Method (Zero PC)**: You can copy photos to a USB flash drive and paste them into `/sdcard/Screensaver/` on your TV using any TV file manager (e.g. X-plore).
 

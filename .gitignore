@@ -1,7 +1,10 @@
 tools/venv/
 .venv/
 .screensaver_cache/
-screensaver/
+# Keep screensaver directory tracked with docs while keeping personal photos private
+screensaver/*
+!screensaver/README.md
+!screensaver/.gitkeep
 tools/adbkey/
 __pycache__/
 launcher/.gradle/

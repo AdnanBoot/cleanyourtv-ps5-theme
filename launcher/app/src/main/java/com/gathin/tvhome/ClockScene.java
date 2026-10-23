@@ -1,7 +1,10 @@
 package com.gathin.tvhome;
 
+import android.animation.ArgbEvaluator;
+import android.animation.ValueAnimator;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -15,22 +18,30 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 /**
- * Clean full-screen screensaver scene:
- * - Slideshow of photos from /sdcard/Screensaver/
- * - 100% original aspect ratio preserved (zero stretching)
- * - Portrait photos centered in fitCenter with subtle ambient background
- * - Landscape photos displayed full screen
- * - No phone frame, no clocks, no dates
+ * Clean screensaver scene:
+ * - If photos exist in /sdcard/Screensaver/: clean full-screen photo slideshow, aspect ratio preserved.
+ * - If no photos exist: falls back to CleanYourTV's default drifting clock and color-shifting ambient glow.
  */
 final class ClockScene {
 
     private static final String TAG = "ClockScene";
     private static final long SLIDE_MS = 10_000L;
+    private static final long MOVE_MS = 60_000L;
+    private static final int[] PALETTE = {0xFF2B5CFF, 0xFF00A39A, 0xFF8A3FFC, 0xFFE0661B, 0xFFD6336C};
 
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Random random = new Random();
     private final View root;
+
+    // Fallback default CleanYourTV views
+    private final View content;
+    private final View ambient;
+    private final GradientDrawable glow;
+    private int colorIndex;
+    private int glowColor;
 
     // Slide views
     private FrameLayout slideA;
@@ -55,6 +66,15 @@ final class ClockScene {
         }
     };
 
+    private final Runnable tickClock = new Runnable() {
+        @Override
+        public void run() {
+            moveClock();
+            shiftGlow();
+            handler.postDelayed(this, MOVE_MS);
+        }
+    };
+
     ClockScene(View root) {
         this.root = root;
 
@@ -69,21 +89,96 @@ final class ClockScene {
             ambientB = root.findViewById(R.id.dreamAmbientB);
             photoB = root.findViewById(R.id.dreamPhotoB);
         }
+
+        content = root.findViewById(R.id.dreamContent);
+        ambient = root.findViewById(R.id.dreamAmbient);
+        if (ambient != null) {
+            glow = new GradientDrawable();
+            glow.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+            ambient.setBackground(glow);
+            ambient.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) ->
+                    glow.setGradientRadius((r - l) * 0.55f));
+            colorIndex = random.nextInt(PALETTE.length);
+            setGlow(PALETTE[colorIndex]);
+        } else {
+            glow = null;
+        }
     }
 
     void start() {
         scanPhotos();
 
         if (!photoFiles.isEmpty()) {
+            // Photo mode: hide default clock and run photo slideshow
+            if (content != null) content.setVisibility(View.GONE);
+            if (ambient != null) ambient.setVisibility(View.GONE);
             handler.removeCallbacks(tickSlide);
+            handler.removeCallbacks(tickClock);
             nextSlide(); // show first slide immediately
             handler.postDelayed(tickSlide, SLIDE_MS);
+        } else {
+            // Fallback default CleanYourTV mode: drifting clock + date over ambient glow
+            if (slideA != null) slideA.setVisibility(View.GONE);
+            if (slideB != null) slideB.setVisibility(View.GONE);
+            if (ambient != null) ambient.setVisibility(View.VISIBLE);
+            if (content != null) {
+                content.setVisibility(View.VISIBLE);
+                content.setAlpha(0f);
+                content.post(() -> {
+                    placeClock();
+                    content.animate().alpha(1f).setDuration(1200).start();
+                });
+            }
+            handler.removeCallbacks(tickSlide);
+            handler.removeCallbacks(tickClock);
+            handler.postDelayed(tickClock, MOVE_MS);
         }
     }
 
     void stop() {
         handler.removeCallbacks(tickSlide);
+        handler.removeCallbacks(tickClock);
         recycleBitmaps();
+    }
+
+    private void moveClock() {
+        if (content == null) return;
+        content.animate().alpha(0f).setDuration(900).withEndAction(() -> {
+            placeClock();
+            content.animate().alpha(1f).setDuration(1200).start();
+        }).start();
+    }
+
+    private void placeClock() {
+        if (content == null || !(content.getParent() instanceof View)) return;
+        View parent = (View) content.getParent();
+        int maxX = Math.max(0, parent.getWidth() - content.getWidth());
+        int maxY = Math.max(0, parent.getHeight() - content.getHeight());
+        float x = maxX * (0.1f + 0.8f * random.nextFloat());
+        float y = maxY * (0.1f + 0.8f * random.nextFloat());
+        content.setX(x);
+        content.setY(y);
+        if (parent.getWidth() > 0 && parent.getHeight() > 0 && glow != null) {
+            glow.setGradientCenter((x + content.getWidth() / 2f) / parent.getWidth(),
+                    (y + content.getHeight() / 2f) / parent.getHeight());
+        }
+    }
+
+    private void shiftGlow() {
+        if (glow == null) return;
+        int from = glowColor;
+        colorIndex = (colorIndex + 1) % PALETTE.length;
+        ValueAnimator anim = ValueAnimator.ofObject(new ArgbEvaluator(), from, PALETTE[colorIndex]);
+        anim.setDuration(8000);
+        anim.addUpdateListener(a -> setGlow((int) a.getAnimatedValue()));
+        anim.start();
+    }
+
+    private void setGlow(int color) {
+        if (glow == null) return;
+        glowColor = color;
+        int c = color & 0x00FFFFFF;
+        glow.setColors(new int[]{0x40000000 | c, 0x14000000 | c, 0x00000000 | c});
     }
 
     private void scanPhotos() {
