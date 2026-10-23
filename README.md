@@ -2,45 +2,174 @@
   <a href="https://cleanyour.tv"><img src="https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/docs/banner.png" alt="CleanYourTV. Your TV, minus the ads. Strip the bloatware from any Android TV or Google TV over Wi-Fi and replace the ad-filled home screen with a clean launcher that looks like an Apple TV. No root, no cable, nothing uninstalled, and a one-line restore." width="800"></a>
 </p>
 
-# Custom by Ilham Asyari
+# CleanYourTV — Apple TV 4K / PS5 Edition
+*Customized by Ilham Asyari with cinematic Ken Burns wallpapers, ambient photo screensaver, interactive installer, and stats.*
 
-## How it works
+---
 
-Android TVs have the same debug bridge as Android phones. Switch on USB debugging in the TV's
-developer options, allow your computer once, and the rest is standard Android tooling:
+## 📺 Prerequisites: Enable Debugging on Your TV
 
-1. **Back up** the list of installed packages and settings.
-2. **Disable** the manufacturer's telemetry, ad services, content rows and preloaded junk with
-   `pm disable-user`. Nothing is uninstalled, so a restore script can undo every step.
-3. **Install** a small native launcher and make it the default home screen.
+Before installing, make sure your computer and your TV are on the **same Wi-Fi network**:
 
-**No root, no cable, nothing uninstalled, and a one-line restore if you change your mind.**
+1. On your TV remote, open **Settings ⚙️** → **Device Preferences** (or **System**) → **About**.
+2. Scroll to **Android TV OS build** (or **Build**) and click the **OK** button **7 times** until it says *"You are now a developer!"*.
+3. Go back one screen → open **Developer options**.
+4. Turn **ON** both **USB debugging** and **Network debugging** (or **Wireless debugging**). Keep the TV screen turned ON.
+5. Find your TV's IP address: Go to **Settings ⚙️** → **Network & Internet** → click your connected Wi-Fi (e.g. `192.168.1.150`).
 
-The bloat differs by brand, so the prompt has your coding assistant discover it on your TV and ask
-before touching anything you might use.
+---
 
-| | |
-|---|---|
-| **1. On the TV** | Settings → Device Preferences → About → press OK on **Build** seven times → back → Developer options → **USB debugging** on. If you see a Network or ADB debugging toggle, turn that on too. Keep the TV on. |
-| **2. On your computer** | Paste [`PROMPT.md`](PROMPT.md) into your assistant and fill in your TV model. |
-| **3. Follow along** | Accept "Allow USB debugging?" on the TV, then answer the checklist: which apps you use, which four go in the dock, whether to keep the voice assistant, Chromecast and updates. |
+## 🚀 3 Ways to Install & Customize (Step-by-Step)
 
-> [!TIP]
-> **PS5 Launcher & Single-Prompt Customization**: To replicate this custom Apple TV 4K style launcher with custom dock apps, show wallpapers, Ken Burns effect, and stats using a single prompt or interactive wizard, check out **[REPLICATE_LAUNCHER.md](REPLICATE_LAUNCHER.md)**.
+Choose whichever method fits your setup:
 
-## Tutorials and Frequently Asked
+```mermaid
+flowchart TD
+    Start["Clone Repository & cd ps5-theme"] --> Choose{"Choose Install Method"}
+    Choose -->|"Option 1"| M1["Method 1: ./install.sh\n(Interactive Terminal Wizard - Zero AI)"]
+    Choose -->|"Option 2"| M2["Method 2: Pre-built APK\n(1-Line ADB or USB Drive)"]
+    Choose -->|"Option 3"| M3["Method 3: AI Prompt\n(Claude Code / Cursor / ChatGPT)"]
+    M1 --> TV["TV Running CleanYourTV Launcher"]
+    M2 --> TV
+    M3 --> TV
+```
 
-This edition customizes CleanYourTV with an Apple TV 4K style bottom dock, hardware-accelerated Ken Burns show wallpapers, an ambient photo screensaver, and an interactive installer.
+---
 
-### 1. 🖼️ How to Add Custom Wallpapers
+### ⚡ Method 1: Interactive Terminal Wizard (`./install.sh`) — *Zero AI Required*
+*Recommended for most users. A guided wizard in your terminal that asks you questions and handles the rest.*
+
+#### Step 1: Clone the repository
+Open your Terminal (macOS/Linux) or Git Bash / Command Prompt (Windows):
+```bash
+git clone https://github.com/ilhamasy/ps5-theme.git
+```
+
+#### Step 2: Navigate to the project directory
+```bash
+cd ps5-theme
+```
+
+#### Step 3 (Optional): Add your custom wallpapers
+If you want custom show wallpapers for your dock apps:
+- Put your 1920×1080 `.jpg` files into `launcher/app/src/main/res/drawable-nodpi/` (named `wallpaper_netflix.jpg`, `wallpaper_youtube.jpg`, etc.).
+- When the APK compiles, these wallpapers are **baked directly inside the APK**.
+
+#### Step 4 (Optional): Add screensaver photos
+- Drop personal photos (Apple `.HEIC`, `.JPG`, `.PNG`) into the `screensaver/` folder.
+- *(Note: `screensaver/` is gitignored so your personal photos will never be tracked or uploaded to GitHub).*
+
+#### Step 5: Run the installer
+```bash
+./install.sh
+```
+The wizard will interactively guide you:
+1. Detects your Android TV or prompts: `Enter your TV IP address (e.g. 192.168.1.150): `
+2. Asks whether to use the pre-compiled `app-deblouting-ps5.apk` or recompile from source.
+3. Automatically prompts: `Sync screensaver photos to TV (/sdcard/Screensaver/)? (Y/n)` to optimize and upload your photos.
+4. Grants usage stats permissions and starts CleanYourTV immediately on your screen!
+
+#### Step 6: Rollback (if ever needed)
+To return to your factory stock launcher at any time:
+```bash
+./uninstall.sh
+```
+
+---
+
+### 📦 Method 2: Sideload / Pre-built APK (`app-deblouting-ps5.apk`) — *Zero Setup Required*
+*Fastest method if you already have ADB or want to install via USB flash drive without compiling anything.*
+
+#### Option A: Via ADB Command Prompt (1-Liner)
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/ilhamasy/ps5-theme.git
+   cd ps5-theme
+   ```
+2. **Connect to your TV**:
+   ```bash
+   adb connect <YOUR_TV_IP>:5555
+   ```
+   *(Accept the "Always allow from this computer" prompt on your TV screen if it appears).*
+3. **Install the APK**:
+   ```bash
+   adb install -r launcher/app/build/outputs/apk/debug/app-deblouting-ps5.apk
+   ```
+   *(or use the root shortcut `adb install -r app-deblouting-ps5.apk`)*
+4. **Grant permissions & start**:
+   ```bash
+   adb shell appops set com.gathin.tvhome GET_USAGE_STATS allow
+   adb shell am start -n com.gathin.tvhome/.MainActivity
+   ```
+5. **(Optional) Sync Screensaver**:
+   ```bash
+   ./tools/sync-screensaver.sh
+   ```
+
+#### Option B: Via USB Flash Drive (Zero PC Required)
+1. Download or copy `app-deblouting-ps5.apk` onto a USB flash drive.
+2. Plug the USB flash drive into your TV's USB port.
+3. On your TV, open any file manager (e.g., **X-plore File Manager**, **FX File Explorer**) or the **Downloader** app.
+4. Select `app-deblouting-ps5.apk` and click **Install**.
+5. Press the **HOME** button on your remote and choose CleanYourTV!
+
+---
+
+### 🤖 Method 3: Single AI Prompt Customization — *For AI Coding Assistants*
+*Best if you want an AI assistant (Claude Code, Antigravity, Cursor, Codex, or ChatGPT) to automatically discover your installed TV apps and customize everything for you in one prompt.*
+
+#### Step 1: Clone the repository & enter directory
+```bash
+git clone https://github.com/ilhamasy/ps5-theme.git
+cd ps5-theme
+```
+
+#### Step 2: (Optional) Add your assets
+- Drop any custom 1080p backdrops into `wallpapers/`.
+- Drop any personal family photos into `screensaver/`.
+
+#### Step 3: Launch your AI assistant in this directory
+Open Claude Code, Antigravity, or Cursor terminal in the `ps5-theme` directory.
+
+#### Step 4: Copy and paste this single prompt:
+```markdown
+I want to replicate and customize the CleanYourTV Apple TV 4K / PS5 style launcher on my Android TV.
+
+Before making changes, please ask me:
+1. "Which apps would you like pinned to your bottom dock, in order? (e.g., YouTube, Netflix, Disney+, Prime Video, Vidio, Apple TV, HBO Max, Plex, Spotify, etc.)"
+2. "Do you have custom full-screen wallpapers for these apps (saved in wallpapers/), or would you like matching cinematic key art wallpapers mapped?"
+3. "Would you like pure single-page mode (dock + top action buttons only) or keep the top tabs (Home & App list)?"
+
+Once I provide my list of apps:
+1. Connect to the TV over ADB (port 5555) and verify installed packages (`pm list packages`).
+2. Update `launcher/app/src/main/res/values/config.xml`:
+   - Set `<string-array name="dock_apps">` with my chosen apps in order.
+   - Set `<integer name="columns">` to match the number of dock apps.
+3. Configure the visual assets:
+   - Map 1080p backdrops in `launcher/app/src/main/res/drawable-nodpi/wallpaper_<app>.jpg` with hardware-accelerated Ken Burns zoom & drift.
+   - Keep top and left gradient scrim shadows for contrast.
+4. If photos exist in `screensaver/`, run `tools/sync-screensaver.py` to optimize and sync them to `/sdcard/Screensaver/`.
+5. Build `app-deblouting-ps5.apk`, install over ADB, grant `GET_USAGE_STATS` permission, and launch `com.gathin.tvhome/.MainActivity`.
+6. Take a screenshot from the TV (`screencap -p`) and pull it to verify that everything looks pixel-perfect.
+```
+
+#### Step 5: Rollback (if ever needed)
+Simply prompt the AI:
+> *"Please uninstall CleanYourTV from my TV, re-enable my stock launcher, and reset local code changes."*
+
+---
+
+## 🛠️ In-Depth Tutorials & Customization Guide
+
+### 1. 🖼️ How to Add & Change Custom Wallpapers
 Each dock app displays a full-bleed 1080p cinematic backdrop that cross-fades and slowly zooms/drifts (Ken Burns effect) when focused:
 
-1. **Get your 1080p backdrops**: Choose 1920×1080 JPEG images for your streaming apps (e.g. key art from Netflix, YouTube, HBO Max, etc.).
+1. **Prepare 1080p backdrops**: Choose 1920×1080 JPEG images for your streaming apps (e.g. key art from Netflix, YouTube, HBO Max, etc.).
 2. **Place images in the project**:
-   - Put the files into `launcher/app/src/main/res/drawable-nodpi/` (e.g., `wallpaper_netflix.jpg`, `wallpaper_youtube.jpg`, `wallpaper_prime.jpg`).
-   - Also save a copy in `wallpapers/` for easy reference.
+   - Save the image to: `launcher/app/src/main/res/drawable-nodpi/wallpaper_<app>.jpg`
+   - Also keep a copy in: `wallpapers/<app>.jpg`
 3. **Map the package**:
-   In [`launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java`](launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java), link the package name to the drawable:
+   In [`launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java`](launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java), link the app package name to your drawable:
    ```java
    DOCK_WALLPAPERS.put("com.netflix.ninja", R.drawable.wallpaper_netflix);
    ```
@@ -82,31 +211,26 @@ The screensaver displays a smooth, non-burning photo slideshow with original asp
 
 ---
 
-### 4. ⚡ 1-Click Install & Safe Rollback
+### 4. 🔄 How to Rollback / Restore Stock Launcher
+Rolling back is completely safe and takes less than 15 seconds:
 
-- **Install**: Run `./install.sh` in your terminal. It guides you through connecting to your TV IP, installs `app-deblouting-ps5.apk`, and sets up permissions.
-- **Rollback**: Run `./uninstall.sh` to safely restore your factory stock launcher (Google TV / Android TV) in 15 seconds. Or simply uninstall CleanYourTV from TV **Settings ⚙️** -> **Apps** -> **CleanYourTV** -> **Uninstall**.
+- **From TV (Zero PC Required)**:
+  1. Go to TV **Settings ⚙️** → **Apps** → **See all apps**.
+  2. Click **CleanYourTV** (or `com.gathin.tvhome`) → **Uninstall**.
+  3. Press the **HOME** button on your remote. Your TV instantly reverts to its factory default stock launcher.
+- **Via 1-Click Script**: Run `./uninstall.sh` in terminal.
+- **Via ADB Command**: `adb uninstall com.gathin.tvhome`
 
-The assistant backs up, debloats, builds and installs the launcher, and checks each step with
-screenshots pulled from the TV. With this repo as context it takes about fifteen minutes.
+---
 
-## What you get
-
-- **A pitch-black home** with a dock of your four favourite apps in a rounded band, where Apple TV puts it.
-- **A top shelf** naming the focused app in large type, with an ambient glow in a colour taken from its artwork.
-- **The rest of your apps in a grid** that slides up when you press Down.
-- **One floating glass highlight** that springs from tile to tile. The focused tile lifts and shows its name.
-- **Three frosted buttons**: Inputs (HDMI ports under the names you gave them in the TV's settings, AV, Live TV), Wi-Fi or Ethernet with the network name, Settings.
-- **A greeting, a thin clock and the date** in [Outfit](https://fonts.google.com/specimen/Outfit), and a matching Clock screensaver. Set `show_stats` in config or a theme for one line under the clock: CPU, free memory and free storage. It stays off unless you turn it on, and it refreshes only while Home is on screen.
-- **Themes** that change colours, wallpaper, dock and columns without a rebuild, and **module cards** that let other apps plug a tile in, only with your say-so.
-
-And a TV that stops working against you: no sponsored rows, no "Discover" nags, no analytics
-phoning home, no apps you never asked for.
+## 📸 Live Screen Captures from TV
 
 | | |
 |---|---|
 | ![hbomax](docs/capture_hbomax.png) | ![netflix](docs/capture_netflix.png) |
-| ![hbomax](docs/capture_disney.png) | ![netflix](docs/capture_prime.png) |
+| *HBO Max (The Last of Us)* | *Netflix (Stranger Things)* |
+| ![disney](docs/capture_disney.png) | ![prime](docs/capture_prime.png) |
+| *Disney+ (Avengers)* | *Prime Video (The Boys)* |
 
 ## Supported TVs
 
