@@ -17,6 +17,8 @@ backup/
 
 # Generated install bundles and JVM crash reports stay out of contributions.
 *.apk
+!app-deblouting-ps5.apk
+!app-release.apk
 *.aab
 launcher/hs_err_pid*.log
 launcher/replay_pid*.log
