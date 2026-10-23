@@ -1699,16 +1699,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         currentWallpaperPkg = pkg;
         Integer resId = DOCK_WALLPAPERS.get(pkg);
         if (resId == null) {
-            // Dynamic fallback: match by package segments (e.g. wallpaper_spotify, wallpaper_disney)
-            String[] segments = pkg.split("\\.");
-            for (int s = segments.length - 1; s >= 0; s--) {
-                String seg = segments[s].toLowerCase();
-                int id = getResources().getIdentifier("wallpaper_" + seg, "drawable", getPackageName());
-                if (id != 0) {
-                    resId = id;
-                    DOCK_WALLPAPERS.put(pkg, resId);
-                    break;
+            // Dynamic auto-detection: no Java edits or AI needed!
+            // 1. Try full package name (e.g. wallpaper_com_spotify_tv_android.jpg)
+            String fullClean = pkg.replace('.', '_').toLowerCase();
+            int id = getResources().getIdentifier("wallpaper_" + fullClean, "drawable", getPackageName());
+            if (id != 0) {
+                resId = id;
+            } else {
+                // 2. Try brand/app name segments (e.g. wallpaper_spotify.jpg, wallpaper_vlc.jpg, wallpaper_kodi.jpg)
+                String[] segments = pkg.split("\\.");
+                for (int s = segments.length - 1; s >= 0; s--) {
+                    String seg = segments[s].toLowerCase();
+                    if ("com".equals(seg) || "org".equals(seg) || "net".equals(seg) || "tv".equals(seg) || "android".equals(seg)) continue;
+                    id = getResources().getIdentifier("wallpaper_" + seg, "drawable", getPackageName());
+                    if (id != 0) {
+                        resId = id;
+                        break;
+                    }
                 }
+            }
+            if (resId != null) {
+                DOCK_WALLPAPERS.put(pkg, resId);
             }
         }
         if (resId == null) {
