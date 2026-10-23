@@ -19,13 +19,6 @@ developer options, allow your computer once, and the rest is standard Android to
 The bloat differs by brand, so the prompt has your coding assistant discover it on your TV and ask
 before touching anything you might use.
 
-## Quick start
-
-You need a computer on the same Wi-Fi as the TV and a coding assistant with shell access.
-Suggested: Claude Code on [0G Private Computer](https://pc.0g.ai), one API key for 100+ models.
-[Claude Code](https://claude.com/product/claude-code) with an [Anthropic plan](https://claude.com/pricing),
-[Codex](https://github.com/openai/codex) or [Gemini CLI](https://github.com/google-gemini/gemini-cli) work too.
-
 | | |
 |---|---|
 | **1. On the TV** | Settings → Device Preferences → About → press OK on **Build** seven times → back → Developer options → **USB debugging** on. If you see a Network or ADB debugging toggle, turn that on too. Keep the TV on. |
@@ -33,9 +26,9 @@ Suggested: Claude Code on [0G Private Computer](https://pc.0g.ai), one API key f
 | **3. Follow along** | Accept "Allow USB debugging?" on the TV, then answer the checklist: which apps you use, which four go in the dock, whether to keep the voice assistant, Chromecast and updates. |
 
 > [!TIP]
-> **Apple TV 4K Launcher & Single-Prompt Customization**: To replicate this custom Apple TV 4K style launcher with custom dock apps, show wallpapers, Ken Burns effect, and stats using a single prompt or interactive wizard, check out **[REPLICATE_LAUNCHER.md](REPLICATE_LAUNCHER.md)**.
+> **PS5 Launcher & Single-Prompt Customization**: To replicate this custom Apple TV 4K style launcher with custom dock apps, show wallpapers, Ken Burns effect, and stats using a single prompt or interactive wizard, check out **[REPLICATE_LAUNCHER.md](REPLICATE_LAUNCHER.md)**.
 
-## 🎬 Apple TV 4K Customization & Tutorials
+## Tutorials and Frequently Asked
 
 This edition customizes CleanYourTV with an Apple TV 4K style bottom dock, hardware-accelerated Ken Burns show wallpapers, an ambient photo screensaver, and an interactive installer.
 
@@ -112,12 +105,8 @@ phoning home, no apps you never asked for.
 
 | | |
 |---|---|
-| ![The top shelf names the focused app over an ambient glow in its colour](docs/focus-2-up-netflix.png) | ![The Inputs popup: HDMI ports with what is connected, AV and Live TV](docs/inputs-menu.jpg) |
-| *Top shelf and ambient glow* | *Inputs: HDMI with connection state, AV, Live TV* |
-| ![The grid with the glass highlight on a tile and its name beneath](docs/focus-1-fancode.png) | ![The Clock screensaver: a thin clock drifting over the glow](docs/clock-screensaver.png) |
-| *The grid, one glass highlight, the tile's name* | *Clock screensaver, drifts so nothing burns in* |
-| ![The aurora theme: a wallpaper and tinted pills, pushed without a rebuild](docs/theme-aurora.jpg) | ![Six columns and a six-app dock from a theme's config.json](docs/theme-six-columns.jpg) |
-| *Aurora theme, pushed with `tools/theme.sh`* | *Six columns and a six-app dock, same launcher* |
+| ![hbomax](docs/capture_hbomax.png) | ![netflix](docs/capture_netflix.png) |
+| ![netflix](capture_disney.png) | ![prime](docs/capture_prime.png) |
 
 ## Supported TVs
 
