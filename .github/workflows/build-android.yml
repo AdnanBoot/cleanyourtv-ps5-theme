@@ -13,6 +13,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,11 +24,19 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Configure Android SDK
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-$ANDROID_HOME}" >> "$GITHUB_ENV"
 
       - name: Install Android SDK components
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+        run: |
+          SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          test -n "$SDK"
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-34" \
+            "build-tools;34.0.0"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -44,3 +53,4 @@ jobs:
           name: CleanYourTV-debug-APK
           path: launcher/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+          
